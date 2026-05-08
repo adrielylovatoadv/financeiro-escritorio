@@ -911,17 +911,32 @@ with tab_bal:
     st.markdown("### ⚖️ Balanço das Sócias")
 
     COLS_B = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai"]
-    cl_b   = {"Out":"Out/24","Nov":"Nov/24","Dez":"Dez/24","Jan":"Jan/25",
-              "Fev":"Fev/25","Mar":"Mar/25","Abr":"Abr/25","Mai":"Mai/25"}
+    cl_b   = {"Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25","Jan":"Jan/26",
+              "Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26"}
 
     mes_sel = st.radio("Mês:", COLS_B, horizontal=True,
                         format_func=lambda x: cl_b[x], key="bal_mes")
 
     mes_full = COL_TO_MES.get(mes_sel,"")
 
-    # honorários do mês
-    honor_mes = sum(float(a.get("honorarios",0)) for a in d["acordos"] if a.get("mes")==mes_full)
-    honor_mes += sum(float(e.get("honorarios",0)) for e in d["execucoes"] if e.get("mes")==mes_full)
+    # honorários do mês (excluindo repasses)
+    honor_mes = sum(
+        float(a.get("honorarios", 0)) for a in d["acordos"]
+        if a.get("mes") == mes_full and a.get("status", "") != "repasse"
+    )
+    honor_mes += sum(
+        float(e.get("honorarios", 0)) for e in d["execucoes"]
+        if e.get("mes") == mes_full and e.get("status", "") != "repasse"
+    )
+    # honorários iniciais pagos no mês
+    _mes_num = {"Out":"10/2025","Nov":"11/2025","Dez":"12/2025",
+                "Jan":"01/2026","Fev":"02/2026","Mar":"03/2026",
+                "Abr":"04/2026","Mai":"05/2026"}
+    _mes_ref = _mes_num.get(mes_sel, "")
+    honor_mes += sum(
+        float(h.get("valor", 0)) for h in d.get("honorarios_iniciais", [])
+        if h.get("status") == "pago" and _mes_ref in str(h.get("data_pagamento", ""))
+    )
 
     # gastos do mês por sócia
     def gastos_mes(col):
