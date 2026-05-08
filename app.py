@@ -259,35 +259,32 @@ def _finalizados_iniciais():
     return [
         {"cliente":"MARCIA MARQUES SILVA ESTEVÃO","reu":"CAMPOS ELISIOS",
          "processo":"5000059-38.2026.8.13.0329","objeto":"OBRIGAÇÃO DE FAZER",
-         "data_finalizacao":"","motivo":"Extinção",
-         "observacao":"Pedido de extinção por cumprimento da obrigação"},
+         "data_finalizacao":"","motivo":"Extinção"},
         {"cliente":"MATHEUS SERRAGLIA REIS AMENT","reu":"ITAU",
          "processo":"4006494-36.2026.8.26.0506","objeto":"TAR PACOTE",
-         "data_finalizacao":"","motivo":"Outro","observacao":"CANCELADO"},
+         "data_finalizacao":"","motivo":"Cancelado"},
         {"cliente":"HELIO DE SOUZA","reu":"BANRISUL",
          "processo":"5008843-54.2025.8.13.0647","objeto":"13176708",
-         "data_finalizacao":"","motivo":"Desistência",
-         "observacao":"Pedido de desistência homologado"},
+         "data_finalizacao":"","motivo":"Desistência"},
         {"cliente":"JOSE CARLOS DOS SANTOS","reu":"QI SOCIE",
          "processo":"5001251-40.2025.8.13.0329","objeto":"0023336525JCD",
-         "data_finalizacao":"","motivo":"Desistência",
-         "observacao":"Pedido de desistência – réplica fora do prazo"},
+         "data_finalizacao":"","motivo":"Desistência"},
         {"cliente":"RUTH FELICIANA DA SILVA SOUZA","reu":"SANTANDER",
          "processo":"5007260-34.2025.8.13.0647","objeto":"RMC n. 877742182-0",
-         "data_finalizacao":"","motivo":"Improcedência","observacao":""},
+         "data_finalizacao":"","motivo":"Improcedência"},
         {"cliente":"HELIO DE SOUZA","reu":"BMG",
          "processo":"5007845-86.2025.8.13.0647","objeto":"RMC 8932388 e 11105568",
-         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+         "data_finalizacao":"","motivo":"Desistência"},
         {"cliente":"ANA MARIA DE OLIVEIRA","reu":"FACTA",
          "processo":"5001079-98.2025.8.13.0329","objeto":"73773620",
-         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+         "data_finalizacao":"","motivo":"Desistência"},
         {"cliente":"MATHEUS SERRAGLIA REIS AMENT","reu":"ITAU",
          "processo":"4014073-35.2026.8.26.0506","objeto":"TAR PACOTE",
-         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+         "data_finalizacao":"","motivo":"Desistência"},
         {"cliente":"ANA MARIA DE OLIVEIRA","reu":"ITAU",
          "processo":"5000918-88.2025.8.13.0329",
          "objeto":"647932633 / 633079531 / 638223061 / 599824559",
-         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+         "data_finalizacao":"","motivo":"Desistência"},
     ]
 
 def _auto_pago_fixas(d):
@@ -1091,7 +1088,7 @@ with tab_fin:
         if st.button("➕ Novo Processo"):
             d["finalizados_sem_honor"].append({
                 "cliente":"","reu":"","processo":"",
-                "objeto":"","data_finalizacao":"","motivo":"","observacao":""
+                "objeto":"","data_finalizacao":"","motivo":"Outro"
             })
             salvar(d); st.rerun()
     with fin_s:
@@ -1103,15 +1100,15 @@ with tab_fin:
             <span style="color:#5c6bc0;font-size:14px;">Nenhum processo cadastrado ainda.</span>
         </div>""", unsafe_allow_html=True)
     else:
-        hdr = st.columns([1.6,1.0,2.2,1.5,1.2,1.5,1.8,0.4])
-        for col, lbl in zip(hdr, ["Cliente","Réu","Processo","Objeto","Data Final.","Motivo","Observação",""]):
+        hdr = st.columns([1.8,1.0,2.4,1.8,1.2,1.6,0.4])
+        for col, lbl in zip(hdr, ["Cliente","Réu","Processo","Objeto","Data Final.","Motivo",""]):
             col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                          unsafe_allow_html=True)
 
         to_del_fin = None
-        MOTIVOS = ["Improcedência","Acordo sem honorário","Desistência","Extinção","Prescrição","Outro"]
+        MOTIVOS = ["Improcedência","Acordo sem honorário","Desistência","Extinção","Cancelado","Prescrição","Outro"]
         for i, p in enumerate(d["finalizados_sem_honor"]):
-            cols = st.columns([1.6,1.0,2.2,1.5,1.2,1.5,1.8,0.4])
+            cols = st.columns([1.8,1.0,2.4,1.8,1.2,1.6,0.4])
             p["cliente"] = cols[0].text_input("", value=p.get("cliente",""),
                 key=f"fin_cli_{i}", label_visibility="collapsed")
             p["reu"] = cols[1].text_input("", value=p.get("reu",""),
@@ -1126,9 +1123,7 @@ with tab_fin:
             p["motivo"] = cols[5].selectbox("", MOTIVOS,
                 index=MOTIVOS.index(cur_mot) if cur_mot in MOTIVOS else len(MOTIVOS)-1,
                 key=f"fin_mot_{i}", label_visibility="collapsed")
-            p["observacao"] = cols[6].text_input("", value=p.get("observacao",""),
-                key=f"fin_obs_{i}", label_visibility="collapsed")
-            if cols[7].button("🗑️", key=f"fin_del_{i}"): to_del_fin = i
+            if cols[6].button("🗑️", key=f"fin_del_{i}"): to_del_fin = i
 
         if to_del_fin is not None:
             d["finalizados_sem_honor"].pop(to_del_fin); salvar(d); st.rerun()
