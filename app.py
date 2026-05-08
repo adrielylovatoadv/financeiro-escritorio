@@ -114,32 +114,30 @@ def calc_execucao(percebido, sucumbencia):
 
 def dados_iniciais():
     acordos = [
-        {"mes":"Out/2025","cliente":"BERNADETE","reu":"SANTANDER","processo":"5001026-20.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Jan/2026","cliente":"ANA MARIA","reu":"ITAU","processo":"5001218-50.2025.8.13.0329","valor_acordo":4638.00,"honorarios":1924.00,"status":"pago"},
-        {"mes":"Jan/2026","cliente":"MARTA","reu":"ITAU","processo":"5001241-93.2025.8.13.0329","valor_acordo":4155.00,"honorarios":1725.00,"status":"pago"},
-        {"mes":"Jan/2026","cliente":"MARTA","reu":"ITAU","processo":"5001131-94.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
-        {"mes":"Jan/2026","cliente":"JOSE CARLOS","reu":"ITAU","processo":"5001339-78.2025.8.13.0329","valor_acordo":4770.00,"honorarios":1979.55,"status":"pago"},
-        {"mes":"Jan/2026","cliente":"LENITA","reu":"ITAU","processo":"5001329-34.2025.8.13.0329","valor_acordo":2900.00,"honorarios":1203.50,"status":"pago"},
-        {"mes":"Fev/2026","cliente":"MARTA","reu":"ITAU","processo":"5001194-22.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
-        {"mes":"Fev/2026","cliente":"MARTA","reu":"ITAU","processo":"5001130-12.2025.8.13.0329","valor_acordo":3900.00,"honorarios":1618.50,"status":"pago"},
-        {"mes":"Fev/2026","cliente":"ANA MARIA","reu":"ITAU","processo":"5001143-11.2025.8.13.0329","valor_acordo":3300.00,"honorarios":1369.50,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"BERNADETE","reu":"ITAU","processo":"5001232-34.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"ROSARIA","reu":"ITAU","processo":"5000000-50.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"MARTA","reu":"ITAU","processo":"5001331-04.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"JOSE","reu":"CARLOS","processo":"5000452-42.2026.8.13.0432","valor_acordo":2500.00,"honorarios":1037.50,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"TEREZINHA","reu":"ITAU","processo":"5000013-49.2026.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"LENITA","reu":"ITAU","processo":"5001328-49.2025.8.13.0329","valor_acordo":3760.00,"honorarios":1560.40,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"CLEIDE","reu":"ITAU","processo":"5001141-41.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"LENITA","reu":"ITAU","processo":"5001327-64.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"MARTA","reu":"ITAU","processo":"5000001-35.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2026","cliente":"MARTA","reu":"ITAU","processo":"5001333-71.2025.8.13.0329","valor_acordo":5600.00,"honorarios":2324.00,"status":"pago"},
-        {"mes":"Abr/2026","cliente":"ELISABETE","reu":"ITAU","processo":"5001363-09.2025.8.13.0329","valor_acordo":8237.44,"honorarios":3418.48,"status":"pago"},
-        {"mes":"Abr/2026","cliente":"JOÃO VAZ","reu":"ITAU","processo":"5001243-63.2025.8.13.0329","valor_acordo":6442.64,"honorarios":2673.70,"status":"pago"},
-        {"mes":"Abr/2026","cliente":"CLEIDE","reu":"ITAU","processo":"5001149-18.2025.8.13.0329","valor_acordo":5500.00,"honorarios":2282.50,"status":"pago"},
-        {"mes":"Abr/2026","cliente":"HELIO","reu":"ITAU","processo":"5008533-48.2025.8.13.0647","valor_acordo":11000.00,"honorarios":4565.00,"status":"pago"},
-        {"mes":"Abr/2026","cliente":"MARTA","reu":"ITAU","processo":"5001193-37.2025.8.13.0329","valor_acordo":4270.00,"honorarios":1772.05,"status":"pago"},
-        {"mes":"Mai/2026","cliente":"LENITA","reu":"ITAU","processo":"5000206-64.2026.8.13.0329","valor_acordo":4320.68,"honorarios":1793.08,"status":"pago"},
-        {"mes":"Mai/2026","cliente":"JOÃO VAZ","reu":"ITAU","processo":"5001242-78.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
+        {"mes":"Out/2025","data_pagamento":"31/10/2025","cliente":"BERNADETE NARDI DE PAULA","reu":"SANTANDER","objeto":"aposentadoria 145353811","processo":"5001026-20.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Jan/2026","data_pagamento":"21/01/2026","cliente":"ANA MARIA DE OLIVEIRA","reu":"ITAÚ","objeto":"seguro cartão","processo":"5001218-50.2025.8.13.0329","valor_acordo":4638.00,"honorarios":1924.00,"status":"pago"},
+        {"mes":"Jan/2026","data_pagamento":"21/01/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"seguro residencial","processo":"5001241-93.2025.8.13.0329","valor_acordo":4155.00,"honorarios":1724.33,"status":"pago"},
+        {"mes":"Jan/2026","data_pagamento":"29/01/2026","cliente":"JOSE CARLOS DOS SANTOS","reu":"ITAU","objeto":"seguro lis e sisdeb","processo":"5001339-78.2025.8.13.0329","valor_acordo":4770.00,"honorarios":1979.55,"status":"pago"},
+        {"mes":"Jan/2026","data_pagamento":"29/01/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"SISDEB ITAUPORTOSEGUR","processo":"5001329-34.2025.8.13.0329","valor_acordo":2900.00,"honorarios":1203.50,"status":"pago"},
+        {"mes":"Jan/2026","data_pagamento":"30/01/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"SISDEB ITAUPORTOSEGUR","processo":"5001131-94.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
+        {"mes":"Fev/2026","data_pagamento":"06/02/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"ITAU SEG VIDA PF","processo":"5001194-22.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
+        {"mes":"Fev/2026","data_pagamento":"12/02/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"PGTO PROTECAO FAMILIAR","processo":"5001130-12.2025.8.13.0329","valor_acordo":3900.00,"honorarios":1618.50,"status":"pago"},
+        {"mes":"Fev/2026","data_pagamento":"24/02/2026","cliente":"ANA MARIA DE OLIVEIRA","reu":"ITAÚ","objeto":"MENSAL COMBINAQUI","processo":"5001143-11.2025.8.13.0329","valor_acordo":3300.00,"honorarios":1369.50,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"04/03/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"ITAU SEG AP PF","processo":"5001330-19.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"04/03/2026","cliente":"BERNADETE NARDI DE PAULA","reu":"SANTANDER","objeto":"PENSAO 145353251","processo":"5001232-34.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"09/03/2026","cliente":"ROSARIA LOGUERCIOS DOS SANTOS","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5000000-50.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"10/03/2026","cliente":"TEREZINHA IVONE DE SOUSA","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5000013-49.2026.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"10/03/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"SISDEB","processo":"5001328-49.2025.8.13.0329","valor_acordo":3760.00,"honorarios":1560.40,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"11/03/2026","cliente":"CLEIDE DE SOUSA ALVES","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5001141-41.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"16/03/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"SISDEB","processo":"5001331-04.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"23/03/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"TAR PACOTE","processo":"5000001-35.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"26/03/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"CAP PIC","processo":"5001333-71.2025.8.13.0329","valor_acordo":5600.00,"honorarios":2324.00,"status":"pago"},
+        {"mes":"Abr/2026","data_pagamento":"01/04/2026","cliente":"ELISABETE APARECIDA MARANGONI","reu":"ITAU","objeto":"RENEGOCIAÇÕES","processo":"5001363-09.2025.8.13.0329","valor_acordo":8237.44,"honorarios":3418.48,"status":"pago"},
+        {"mes":"Abr/2026","data_pagamento":"01/04/2026","cliente":"JOAO DONIZETE VAZ","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5001243-63.2025.8.13.0329","valor_acordo":6442.64,"honorarios":2673.70,"status":"pendente"},
+        {"mes":"Abr/2026","data_pagamento":"17/04/2026","cliente":"CLEIDE DE SOUSA ALVES","reu":"ITAU","objeto":"SEGURO CARTAO","processo":"5001149-18.2025.8.13.0329","valor_acordo":5500.00,"honorarios":2282.50,"status":"pago"},
+        {"mes":"Abr/2026","data_pagamento":"17/04/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"SEGURO CARTAO","processo":"5001193-37.2025.8.13.0329","valor_acordo":4270.00,"honorarios":1772.05,"status":"pago"},
+        {"mes":"Abr/2026","data_pagamento":"23/04/2026","cliente":"HELIO DE SOUZA","reu":"PAN","objeto":"344905159-2 / 339148026-0 / 336819430-8 / 334093468-0","processo":"5008533-48.2025.8.13.0647","valor_acordo":11000.00,"honorarios":4565.00,"status":"pago"},
+        {"mes":"Mai/2026","data_pagamento":"05/05/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"SEGURO CARTÃO + ITAU SEG VIDA PF + PGTO PROTECAO FAMILIAR","processo":"5000206-64.2026.8.13.0329","valor_acordo":4320.68,"honorarios":1793.08,"status":"pendente"},
     ]
 
     execucoes = []
@@ -227,6 +225,9 @@ def carregar():
             d["fixas_quem"] = {cat:"dividido" for cat in d.get("fixas",{})}
         if "fixas_status" not in d:
             d["fixas_status"] = {cat:{} for cat in d.get("fixas",{})}
+        for a in d.get("acordos", []):
+            if "objeto" not in a: a["objeto"] = ""
+            if "data_pagamento" not in a: a["data_pagamento"] = ""
         return d
     return dados_iniciais()
 
@@ -378,48 +379,52 @@ with tab_ac:
     ca, cs = st.columns([6,1])
     with ca:
         if st.button("➕ Novo Acordo"):
-            d["acordos"].append({"mes":MESES[0],"cliente":"","reu":"","processo":"",
-                                  "valor_acordo":0.0,"honorarios":0.0,"status":"pendente"})
+            d["acordos"].append({"mes":MESES[0],"data_pagamento":"","cliente":"","reu":"",
+                                  "objeto":"","processo":"","valor_acordo":0.0,
+                                  "honorarios":0.0,"status":"pendente"})
             salvar(d); st.rerun()
     with cs:
         if st.button("💾 Salvar", key="sv_ac"):
             salvar(d); st.success("Salvo!")
 
     # cabeçalho
-    hdr = st.columns([1.4,1.8,1.2,2.8,1.4,1.4,1.1,0.5])
-    for col, lbl in zip(hdr,["Mês","Cliente","Réu","Processo","Valor Acordo","Honorários (auto)","Status",""]):
+    hdr = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.9,0.4])
+    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Processo","Objeto","Valor Acordo","Honorários","Status",""]):
         col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                      unsafe_allow_html=True)
 
     to_del = None
     for i, a in enumerate(d["acordos"]):
-        cols = st.columns([1.4,1.8,1.2,2.8,1.4,1.4,1.1,0.5])
+        cols = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.9,0.4])
         a["mes"] = cols[0].selectbox("", MESES,
             index=MESES.index(a["mes"]) if a.get("mes") in MESES else 0,
             key=f"ac_mes_{i}", label_visibility="collapsed")
-        a["cliente"] = cols[1].text_input("", value=a.get("cliente",""),
+        a["data_pagamento"] = cols[1].text_input("", value=a.get("data_pagamento",""),
+            placeholder="DD/MM/AAAA", key=f"ac_dp_{i}", label_visibility="collapsed")
+        a["cliente"] = cols[2].text_input("", value=a.get("cliente",""),
             key=f"ac_cli_{i}", label_visibility="collapsed")
-        a["reu"] = cols[2].text_input("", value=a.get("reu",""),
+        a["reu"] = cols[3].text_input("", value=a.get("reu",""),
             key=f"ac_reu_{i}", label_visibility="collapsed")
-        a["processo"] = cols[3].text_input("", value=a.get("processo",""),
+        a["processo"] = cols[4].text_input("", value=a.get("processo",""),
             key=f"ac_proc_{i}", label_visibility="collapsed")
+        a["objeto"] = cols[5].text_input("", value=a.get("objeto",""),
+            key=f"ac_obj_{i}", label_visibility="collapsed")
 
-        # valor acordo com máscara
         va_str = st.session_state.get(f"ac_va_{i}", _vs(a.get("valor_acordo",0)))
-        va_new = cols[4].text_input("", value=va_str, placeholder="0,00",
+        va_new = cols[6].text_input("", value=va_str, placeholder="0,00",
             key=f"ac_va_{i}", label_visibility="collapsed")
         try: va = float(va_new.replace(".","").replace(",",".")) if va_new else 0.0
         except: va = 0.0
         a["valor_acordo"] = va
         a["honorarios"] = calc_acordo(va)
 
-        cols[5].markdown(f"""<div style='padding-top:8px;font-size:14px;font-weight:600;color:#4caf50;'>
+        cols[7].markdown(f"""<div style='padding-top:8px;font-size:13px;font-weight:600;color:#4caf50;'>
             {_fmt(a["honorarios"])}</div>""", unsafe_allow_html=True)
 
-        a["status"] = cols[6].selectbox("", ["pago","pendente"],
+        a["status"] = cols[8].selectbox("", ["pago","pendente"],
             index=0 if a.get("status")=="pago" else 1,
             key=f"ac_st_{i}", label_visibility="collapsed")
-        if cols[7].button("🗑️", key=f"ac_del_{i}"): to_del = i
+        if cols[9].button("🗑️", key=f"ac_del_{i}"): to_del = i
 
     if to_del is not None:
         d["acordos"].pop(to_del); salvar(d); st.rerun()
