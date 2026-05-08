@@ -72,17 +72,19 @@ _components.html("""
 # ── Persistência ──────────────────────────────────────────────────────────────
 DATA_FILE = os.path.join(os.path.dirname(__file__), "financeiro_data.json")
 
-MESES = ["Out/2024","Nov/2024","Dez/2024","Jan/2025","Fev/2025","Mar/2025",
-         "Abr/2025","Mai/2025","Jun/2025","Jul/2025","Ago/2025","Set/2025",
-         "Out/2025","Nov/2025","Dez/2025"]
+MESES = ["Out/2025","Nov/2025","Dez/2025",
+         "Jan/2026","Fev/2026","Mar/2026","Abr/2026","Mai/2026","Jun/2026",
+         "Jul/2026","Ago/2026","Set/2026","Out/2026","Nov/2026","Dez/2026",
+         "Jan/2027","Fev/2027","Mar/2027","Abr/2027","Mai/2027","Jun/2027",
+         "Jul/2027","Ago/2027","Set/2027","Out/2027","Nov/2027","Dez/2027"]
 
 COL_FIXAS = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai",
              "Jun","Jul","Ago","Set","Out2","Nov2","Dez2"]
 COL_TO_MES = {
-    "Out":"Out/2024","Nov":"Nov/2024","Dez":"Dez/2024",
-    "Jan":"Jan/2025","Fev":"Fev/2025","Mar":"Mar/2025","Abr":"Abr/2025",
-    "Mai":"Mai/2025","Jun":"Jun/2025","Jul":"Jul/2025","Ago":"Ago/2025",
-    "Set":"Set/2025","Out2":"Out/2025","Nov2":"Nov/2025","Dez2":"Dez/2025",
+    "Out":"Out/2025","Nov":"Nov/2025","Dez":"Dez/2025",
+    "Jan":"Jan/2026","Fev":"Fev/2026","Mar":"Mar/2026","Abr":"Abr/2026",
+    "Mai":"Mai/2026","Jun":"Jun/2026","Jul":"Jul/2026","Ago":"Ago/2026",
+    "Set":"Set/2026","Out2":"Out/2026","Nov2":"Nov/2026","Dez2":"Dez/2026",
 }
 
 def _v(s):
@@ -112,32 +114,32 @@ def calc_execucao(percebido, sucumbencia):
 
 def dados_iniciais():
     acordos = [
-        {"mes":"Out/2024","cliente":"BERNADETE","reu":"SANTANDER","processo":"5001026-20.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Jan/2025","cliente":"ANA MARIA","reu":"ITAU","processo":"5001218-50.2025.8.13.0329","valor_acordo":4638.00,"honorarios":1924.00,"status":"pago"},
-        {"mes":"Jan/2025","cliente":"MARTA","reu":"ITAU","processo":"5001241-93.2025.8.13.0329","valor_acordo":4155.00,"honorarios":1725.00,"status":"pago"},
-        {"mes":"Jan/2025","cliente":"MARTA","reu":"ITAU","processo":"5001131-94.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
-        {"mes":"Jan/2025","cliente":"JOSE CARLOS","reu":"ITAU","processo":"5001339-78.2025.8.13.0329","valor_acordo":4770.00,"honorarios":1979.55,"status":"pago"},
-        {"mes":"Jan/2025","cliente":"LENITA","reu":"ITAU","processo":"5001329-34.2025.8.13.0329","valor_acordo":2900.00,"honorarios":1203.50,"status":"pago"},
-        {"mes":"Fev/2025","cliente":"MARTA","reu":"ITAU","processo":"5001194-22.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
-        {"mes":"Fev/2025","cliente":"MARTA","reu":"ITAU","processo":"5001130-12.2025.8.13.0329","valor_acordo":3900.00,"honorarios":1618.50,"status":"pago"},
-        {"mes":"Fev/2025","cliente":"ANA MARIA","reu":"ITAU","processo":"5001143-11.2025.8.13.0329","valor_acordo":3300.00,"honorarios":1369.50,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"BERNADETE","reu":"ITAU","processo":"5001232-34.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"ROSARIA","reu":"ITAU","processo":"5000000-50.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"MARTA","reu":"ITAU","processo":"5001331-04.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"JOSE","reu":"CARLOS","processo":"5000452-42.2026.8.13.0432","valor_acordo":2500.00,"honorarios":1037.50,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"TEREZINHA","reu":"ITAU","processo":"5000013-49.2026.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"LENITA","reu":"ITAU","processo":"5001328-49.2025.8.13.0329","valor_acordo":3760.00,"honorarios":1560.40,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"CLEIDE","reu":"ITAU","processo":"5001141-41.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"LENITA","reu":"ITAU","processo":"5001327-64.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"MARTA","reu":"ITAU","processo":"5000001-35.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2025","cliente":"MARTA","reu":"ITAU","processo":"5001333-71.2025.8.13.0329","valor_acordo":5600.00,"honorarios":2324.00,"status":"pago"},
-        {"mes":"Abr/2025","cliente":"ELISABETE","reu":"ITAU","processo":"5001363-09.2025.8.13.0329","valor_acordo":8237.44,"honorarios":3418.48,"status":"pago"},
-        {"mes":"Abr/2025","cliente":"JOÃO VAZ","reu":"ITAU","processo":"5001243-63.2025.8.13.0329","valor_acordo":6442.64,"honorarios":2673.70,"status":"pago"},
-        {"mes":"Abr/2025","cliente":"CLEIDE","reu":"ITAU","processo":"5001149-18.2025.8.13.0329","valor_acordo":5500.00,"honorarios":2282.50,"status":"pago"},
-        {"mes":"Abr/2025","cliente":"HELIO","reu":"ITAU","processo":"5008533-48.2025.8.13.0647","valor_acordo":11000.00,"honorarios":4565.00,"status":"pago"},
-        {"mes":"Abr/2025","cliente":"MARTA","reu":"ITAU","processo":"5001193-37.2025.8.13.0329","valor_acordo":4270.00,"honorarios":1772.05,"status":"pago"},
-        {"mes":"Mai/2025","cliente":"LENITA","reu":"ITAU","processo":"5000206-64.2026.8.13.0329","valor_acordo":4320.68,"honorarios":1793.08,"status":"pago"},
-        {"mes":"Mai/2025","cliente":"JOÃO VAZ","reu":"ITAU","processo":"5001242-78.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
+        {"mes":"Out/2025","cliente":"BERNADETE","reu":"SANTANDER","processo":"5001026-20.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Jan/2026","cliente":"ANA MARIA","reu":"ITAU","processo":"5001218-50.2025.8.13.0329","valor_acordo":4638.00,"honorarios":1924.00,"status":"pago"},
+        {"mes":"Jan/2026","cliente":"MARTA","reu":"ITAU","processo":"5001241-93.2025.8.13.0329","valor_acordo":4155.00,"honorarios":1725.00,"status":"pago"},
+        {"mes":"Jan/2026","cliente":"MARTA","reu":"ITAU","processo":"5001131-94.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
+        {"mes":"Jan/2026","cliente":"JOSE CARLOS","reu":"ITAU","processo":"5001339-78.2025.8.13.0329","valor_acordo":4770.00,"honorarios":1979.55,"status":"pago"},
+        {"mes":"Jan/2026","cliente":"LENITA","reu":"ITAU","processo":"5001329-34.2025.8.13.0329","valor_acordo":2900.00,"honorarios":1203.50,"status":"pago"},
+        {"mes":"Fev/2026","cliente":"MARTA","reu":"ITAU","processo":"5001194-22.2025.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
+        {"mes":"Fev/2026","cliente":"MARTA","reu":"ITAU","processo":"5001130-12.2025.8.13.0329","valor_acordo":3900.00,"honorarios":1618.50,"status":"pago"},
+        {"mes":"Fev/2026","cliente":"ANA MARIA","reu":"ITAU","processo":"5001143-11.2025.8.13.0329","valor_acordo":3300.00,"honorarios":1369.50,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"BERNADETE","reu":"ITAU","processo":"5001232-34.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"ROSARIA","reu":"ITAU","processo":"5000000-50.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"MARTA","reu":"ITAU","processo":"5001331-04.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"JOSE","reu":"CARLOS","processo":"5000452-42.2026.8.13.0432","valor_acordo":2500.00,"honorarios":1037.50,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"TEREZINHA","reu":"ITAU","processo":"5000013-49.2026.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"LENITA","reu":"ITAU","processo":"5001328-49.2025.8.13.0329","valor_acordo":3760.00,"honorarios":1560.40,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"CLEIDE","reu":"ITAU","processo":"5001141-41.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"LENITA","reu":"ITAU","processo":"5001327-64.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"MARTA","reu":"ITAU","processo":"5000001-35.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","cliente":"MARTA","reu":"ITAU","processo":"5001333-71.2025.8.13.0329","valor_acordo":5600.00,"honorarios":2324.00,"status":"pago"},
+        {"mes":"Abr/2026","cliente":"ELISABETE","reu":"ITAU","processo":"5001363-09.2025.8.13.0329","valor_acordo":8237.44,"honorarios":3418.48,"status":"pago"},
+        {"mes":"Abr/2026","cliente":"JOÃO VAZ","reu":"ITAU","processo":"5001243-63.2025.8.13.0329","valor_acordo":6442.64,"honorarios":2673.70,"status":"pago"},
+        {"mes":"Abr/2026","cliente":"CLEIDE","reu":"ITAU","processo":"5001149-18.2025.8.13.0329","valor_acordo":5500.00,"honorarios":2282.50,"status":"pago"},
+        {"mes":"Abr/2026","cliente":"HELIO","reu":"ITAU","processo":"5008533-48.2025.8.13.0647","valor_acordo":11000.00,"honorarios":4565.00,"status":"pago"},
+        {"mes":"Abr/2026","cliente":"MARTA","reu":"ITAU","processo":"5001193-37.2025.8.13.0329","valor_acordo":4270.00,"honorarios":1772.05,"status":"pago"},
+        {"mes":"Mai/2026","cliente":"LENITA","reu":"ITAU","processo":"5000206-64.2026.8.13.0329","valor_acordo":4320.68,"honorarios":1793.08,"status":"pago"},
+        {"mes":"Mai/2026","cliente":"JOÃO VAZ","reu":"ITAU","processo":"5001242-78.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
     ]
 
     execucoes = []
@@ -307,6 +309,16 @@ with tab_dash:
         m = a.get("mes",""); honor_mes[m] = honor_mes.get(m,0) + float(a.get("honorarios",0))
     for e in d["execucoes"]:
         m = e.get("mes",""); honor_mes[m] = honor_mes.get(m,0) + float(e.get("honorarios",0))
+    for hi in d.get("honorarios_iniciais",[]):
+        if hi.get("status") == "pago":
+            dp = hi.get("data_pagamento","")
+            if dp and len(dp) == 10:
+                try:
+                    parts = dp.split("/")
+                    meses_abr = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+                    m = f"{meses_abr[int(parts[1])]}/{parts[2]}"
+                    honor_mes[m] = honor_mes.get(m,0) + float(hi.get("valor",0))
+                except: pass
 
     fixas_mes = {}
     for cat, meses in d["fixas"].items():
@@ -664,10 +676,12 @@ with tab_fix:
 with tab_var:
     st.markdown("### 🛒 Despesas Variáveis")
 
-    va, vs_btn = st.columns([4,1,1])
-    filtro_q = st.selectbox("Filtrar por sócia:", ["Todas","Adriely","Eduarda","dividido"],
-                            key="filt_var")
-    filtro_st = st.selectbox("Filtrar por status:", ["Todos","pago","pendente"], key="filt_st")
+    filtro_col1, filtro_col2 = st.columns(2)
+    with filtro_col1:
+        filtro_q = st.selectbox("Filtrar por sócia:", ["Todas","Adriely","Eduarda","dividido"],
+                                key="filt_var")
+    with filtro_col2:
+        filtro_st = st.selectbox("Filtrar por status:", ["Todos","pago","pendente"], key="filt_st")
 
     col_va, col_vs = st.columns([6,1])
     with col_va:
