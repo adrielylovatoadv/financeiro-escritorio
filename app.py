@@ -87,6 +87,36 @@ COL_TO_MES = {
     "Set":"Set/2026","Out2":"Out/2026","Nov2":"Nov/2026","Dez2":"Dez/2026",
 }
 
+# Status: cores e ciclos
+ST_COR   = {"pago": "🟢", "pendente": "🔴", "repasse": "🟡"}
+ST_CICLO3 = {"pago": "repasse", "repasse": "pendente", "pendente": "pago"}   # receitas
+ST_CICLO2 = {"pago": "pendente", "pendente": "pago"}                          # despesas
+
+LEGENDA_RECEITAS = """<div style='font-size:11px;color:#7986cb;margin-bottom:8px;'>
+  🟢 recebido &nbsp;|&nbsp; 🔴 não recebido &nbsp;|&nbsp; 🟡 recebido – repasse ao cliente pendente
+  &nbsp;&nbsp;<em>(clique na bolinha para alterar)</em></div>"""
+
+LEGENDA_DESPESAS = """<div style='font-size:11px;color:#7986cb;margin-bottom:8px;'>
+  🟢 pago &nbsp;|&nbsp; 🔴 não pago &nbsp;&nbsp;<em>(clique na bolinha para alterar)</em></div>"""
+
+def _st3(col, key, item, campo="status"):
+    """Botão de status 3 estados (receitas): 🟢 pago · 🟡 repasse · 🔴 pendente"""
+    cur = item.get(campo, "pendente")
+    if cur not in ST_COR: cur = "pendente"
+    if col.button(ST_COR[cur], key=key):
+        item[campo] = ST_CICLO3[cur]
+        return True
+    return False
+
+def _st2(col, key, item, campo="status"):
+    """Botão de status 2 estados (despesas): 🟢 pago · 🔴 pendente"""
+    cur = item.get(campo, "pendente")
+    if cur not in ("pago","pendente"): cur = "pendente"
+    if col.button(ST_COR[cur], key=key):
+        item[campo] = ST_CICLO2[cur]
+        return True
+    return False
+
 def _v(s):
     import re
     if s is None: return 0.0
@@ -369,12 +399,13 @@ with tab_dash:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_ac:
     st.markdown("### 🤝 Acordos")
-    st.markdown("""<div class="bloco" style="border-color:#5c6bc0;padding:12px 16px;margin-bottom:12px;">
+    st.markdown("""<div class="bloco" style="border-color:#5c6bc0;padding:12px 16px;margin-bottom:4px;">
         <span style="color:#7986cb;font-size:12px;">
         📐 <strong>Cálculo automático:</strong>
         Honorários = 10% do valor + 35% do restante (= 41,5% do valor do acordo)
         </span>
     </div>""", unsafe_allow_html=True)
+    st.markdown(LEGENDA_RECEITAS, unsafe_allow_html=True)
 
     ca, cs = st.columns([6,1])
     with ca:
@@ -388,14 +419,14 @@ with tab_ac:
             salvar(d); st.success("Salvo!")
 
     # cabeçalho
-    hdr = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.9,0.4])
-    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Processo","Objeto","Valor Acordo","Honorários","Status",""]):
+    hdr = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.5,0.4])
+    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Processo","Objeto","Valor Acordo","Honorários","","Del"]):
         col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                      unsafe_allow_html=True)
 
-    to_del = None
+    to_del = None; mudou_ac = False
     for i, a in enumerate(d["acordos"]):
-        cols = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.9,0.4])
+        cols = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.5,0.4])
         a["mes"] = cols[0].selectbox("", MESES,
             index=MESES.index(a["mes"]) if a.get("mes") in MESES else 0,
             key=f"ac_mes_{i}", label_visibility="collapsed")
@@ -421,10 +452,10 @@ with tab_ac:
         cols[7].markdown(f"""<div style='padding-top:8px;font-size:13px;font-weight:600;color:#4caf50;'>
             {_fmt(a["honorarios"])}</div>""", unsafe_allow_html=True)
 
-        a["status"] = cols[8].selectbox("", ["pago","pendente"],
-            index=0 if a.get("status")=="pago" else 1,
-            key=f"ac_st_{i}", label_visibility="collapsed")
+        if _st3(cols[8], f"ac_st_{i}", a): mudou_ac = True
         if cols[9].button("🗑️", key=f"ac_del_{i}"): to_del = i
+
+    if mudou_ac: salvar(d); st.rerun()
 
     if to_del is not None:
         d["acordos"].pop(to_del); salvar(d); st.rerun()
@@ -443,12 +474,13 @@ with tab_ac:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_ex:
     st.markdown("### ⚖️ Execuções")
-    st.markdown("""<div class="bloco" style="border-color:#5c6bc0;padding:12px 16px;margin-bottom:12px;">
+    st.markdown("""<div class="bloco" style="border-color:#5c6bc0;padding:12px 16px;margin-bottom:4px;">
         <span style="color:#7986cb;font-size:12px;">
         📐 <strong>Cálculo automático:</strong>
         Honorários = 35% do valor percebido + honorários de sucumbência
         </span>
     </div>""", unsafe_allow_html=True)
+    st.markdown(LEGENDA_RECEITAS, unsafe_allow_html=True)
 
     ex_a, ex_s = st.columns([6,1])
     with ex_a:
@@ -471,9 +503,9 @@ with tab_ex:
             col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                          unsafe_allow_html=True)
 
-        to_del_e = None
+        to_del_e = None; mudou_ex = False
         for i, e in enumerate(d["execucoes"]):
-            cols = st.columns([1.4,1.8,1.2,2.4,1.3,1.3,1.3,1.1,0.5])
+            cols = st.columns([1.4,1.8,1.2,2.4,1.3,1.3,1.3,0.5,0.5])
             e["mes"] = cols[0].selectbox("", MESES,
                 index=MESES.index(e["mes"]) if e.get("mes") in MESES else 0,
                 key=f"ex_mes_{i}", label_visibility="collapsed")
@@ -502,11 +534,10 @@ with tab_ex:
 
             cols[6].markdown(f"""<div style='padding-top:8px;font-size:14px;font-weight:600;color:#4caf50;'>
                 {_fmt(e['honorarios'])}</div>""", unsafe_allow_html=True)
-            e["status"] = cols[7].selectbox("", ["pago","pendente"],
-                index=0 if e.get("status")=="pago" else 1,
-                key=f"ex_st_{i}", label_visibility="collapsed")
+            if _st3(cols[7], f"ex_st_{i}", e): mudou_ex = True
             if cols[8].button("🗑️", key=f"ex_del_{i}"): to_del_e = i
 
+        if mudou_ex: salvar(d); st.rerun()
         if to_del_e is not None:
             d["execucoes"].pop(to_del_e); salvar(d); st.rerun()
 
@@ -526,14 +557,16 @@ with tab_hi:
         if st.button("💾 Salvar", key="sv_hi"):
             salvar(d); st.success("Salvo!")
 
-    hdr = st.columns([2,2.5,1.5,1.5,2,1.1,0.5])
-    for col, lbl in zip(hdr,["Cliente","Processo","Valor","Data Pagto","Observação","Status",""]):
+    st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
+
+    hdr = st.columns([2,2.5,1.5,1.5,2,0.5,0.5])
+    for col, lbl in zip(hdr,["Cliente","Processo","Valor","Data Pagto","Observação","","Del"]):
         col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                      unsafe_allow_html=True)
 
-    to_del_h = None
+    to_del_h = None; mudou_hi = False
     for i, h in enumerate(d["honorarios_iniciais"]):
-        cols = st.columns([2,2.5,1.5,1.5,2,1.1,0.5])
+        cols = st.columns([2,2.5,1.5,1.5,2,0.5,0.5])
         h["cliente"] = cols[0].text_input("", value=h.get("cliente",""),
             key=f"hi_cli_{i}", label_visibility="collapsed")
         h["processo"] = cols[1].text_input("", value=h.get("processo",""),
@@ -550,11 +583,10 @@ with tab_hi:
             placeholder="DD/MM/AAAA", key=f"hi_dt_{i}", label_visibility="collapsed")
         h["observacao"] = cols[4].text_input("", value=h.get("observacao",""),
             key=f"hi_obs_{i}", label_visibility="collapsed")
-        h["status"] = cols[5].selectbox("", ["pago","pendente"],
-            index=0 if h.get("status")=="pago" else 1,
-            key=f"hi_st_{i}", label_visibility="collapsed")
+        if _st2(cols[5], f"hi_st_{i}", h): mudou_hi = True
         if cols[6].button("🗑️", key=f"hi_del_{i}"): to_del_h = i
 
+    if mudou_hi: salvar(d); st.rerun()
     if to_del_h is not None:
         d["honorarios_iniciais"].pop(to_del_h); salvar(d); st.rerun()
 
@@ -575,8 +607,8 @@ with tab_fix:
     st.caption("Despesas fixas são divididas 50/50 entre as sócias. Marque o status de pagamento.")
 
     COLS_VIS = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai"]
-    col_lbl  = {"Out":"Out/24","Nov":"Nov/24","Dez":"Dez/24","Jan":"Jan/25",
-                "Fev":"Fev/25","Mar":"Mar/25","Abr":"Abr/25","Mai":"Mai/25"}
+    col_lbl  = {"Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25","Jan":"Jan/26",
+                "Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26"}
 
     fix_nova, fix_sv = st.columns([5,1])
     with fix_nova:
@@ -653,27 +685,30 @@ with tab_fix:
     col_status[2].markdown("<span style='font-size:11px;color:#a5d6a7;font-weight:600;'>Eduarda</span>",
                            unsafe_allow_html=True)
 
+    st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
+    mudou_fix_st = False
     for cat in d["fixas"]:
         val = d["fixas"][cat].get(mes_atual_col, 0)
         if val <= 0: continue
-        cols_s = st.columns([3, 2, 2])
-        cols_s[0].markdown(f"<div style='padding-top:6px;'>{cat} — {_fmt(val/2)} cada</div>",
+        cols_s = st.columns([3, 1, 1])
+        cols_s[0].markdown(f"<div style='padding-top:8px;'>{cat} — {_fmt(val/2)} cada</div>",
                            unsafe_allow_html=True)
-        # Adriely
-        st_a_key = f"fxst_a_{cat}"
-        st_a_cur = d["fixas_status"].get(cat,{}).get(f"{mes_atual_col}_adriely","pendente")
-        st_a_new = cols_s[1].selectbox("", ["pago","pendente"],
-            index=0 if st_a_cur=="pago" else 1,
-            key=st_a_key, label_visibility="collapsed")
         if cat not in d["fixas_status"]: d["fixas_status"][cat] = {}
-        d["fixas_status"][cat][f"{mes_atual_col}_adriely"] = st_a_new
+        # Adriely
+        fa = {"status": d["fixas_status"][cat].get(f"{mes_atual_col}_adriely","pendente")}
+        if _st2(cols_s[1], f"fxst_a_{cat}", fa):
+            d["fixas_status"][cat][f"{mes_atual_col}_adriely"] = fa["status"]
+            mudou_fix_st = True
+        else:
+            d["fixas_status"][cat][f"{mes_atual_col}_adriely"] = fa["status"]
         # Eduarda
-        st_e_key = f"fxst_e_{cat}"
-        st_e_cur = d["fixas_status"].get(cat,{}).get(f"{mes_atual_col}_eduarda","pendente")
-        st_e_new = cols_s[2].selectbox("", ["pago","pendente"],
-            index=0 if st_e_cur=="pago" else 1,
-            key=st_e_key, label_visibility="collapsed")
-        d["fixas_status"][cat][f"{mes_atual_col}_eduarda"] = st_e_new
+        fe = {"status": d["fixas_status"][cat].get(f"{mes_atual_col}_eduarda","pendente")}
+        if _st2(cols_s[2], f"fxst_e_{cat}", fe):
+            d["fixas_status"][cat][f"{mes_atual_col}_eduarda"] = fe["status"]
+            mudou_fix_st = True
+        else:
+            d["fixas_status"][cat][f"{mes_atual_col}_eduarda"] = fe["status"]
+    if mudou_fix_st: salvar(d); st.rerun()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DESPESAS VARIÁVEIS
@@ -687,6 +722,7 @@ with tab_var:
                                 key="filt_var")
     with filtro_col2:
         filtro_st = st.selectbox("Filtrar por status:", ["Todos","pago","pendente"], key="filt_st")
+    st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
 
     col_va, col_vs = st.columns([6,1])
     with col_va:
@@ -698,8 +734,8 @@ with tab_var:
         if st.button("💾 Salvar  ", key="sv_var"): salvar(d); st.success("Salvo!")
 
     COLS_VIS_V = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai"]
-    cl = {"Out":"Out/24","Nov":"Nov/24","Dez":"Dez/24","Jan":"Jan/25",
-          "Fev":"Fev/25","Mar":"Mar/25","Abr":"Abr/25","Mai":"Mai/25"}
+    cl = {"Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25","Jan":"Jan/26",
+          "Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26"}
 
     hdr_v = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*len(COLS_VIS_V) + [0.9, 0.4])
     for lbl, col in zip(["Descrição","Val. Total","Parcelas","Quem","Onde","Status"]+
@@ -736,9 +772,7 @@ with tab_var:
             key=f"vq_{i}", label_visibility="collapsed")
         item["onde"] = row[4].text_input("", value=item.get("onde",""),
             key=f"vo_{i}", label_visibility="collapsed")
-        item["status"] = row[5].selectbox("", ["pago","pendente"],
-            index=0 if st_item=="pago" else 1,
-            key=f"vst_{i}", label_visibility="collapsed")
+        if _st2(row[5], f"vst_{i}", item): salvar(d); st.rerun()
 
         total_item = 0.0
         for idx, col in enumerate(COLS_VIS_V):
