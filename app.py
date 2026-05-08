@@ -133,11 +133,11 @@ def dados_iniciais():
         {"mes":"Mar/2026","data_pagamento":"23/03/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"TAR PACOTE","processo":"5000001-35.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
         {"mes":"Mar/2026","data_pagamento":"26/03/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"CAP PIC","processo":"5001333-71.2025.8.13.0329","valor_acordo":5600.00,"honorarios":2324.00,"status":"pago"},
         {"mes":"Abr/2026","data_pagamento":"01/04/2026","cliente":"ELISABETE APARECIDA MARANGONI","reu":"ITAU","objeto":"RENEGOCIAÇÕES","processo":"5001363-09.2025.8.13.0329","valor_acordo":8237.44,"honorarios":3418.48,"status":"pago"},
-        {"mes":"Abr/2026","data_pagamento":"01/04/2026","cliente":"JOAO DONIZETE VAZ","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5001243-63.2025.8.13.0329","valor_acordo":6442.64,"honorarios":2673.70,"status":"pendente"},
+        {"mes":"Abr/2026","data_pagamento":"01/04/2026","cliente":"JOAO DONIZETE VAZ","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5001243-63.2025.8.13.0329","valor_acordo":6442.64,"honorarios":2673.70,"status":"pago"},
         {"mes":"Abr/2026","data_pagamento":"17/04/2026","cliente":"CLEIDE DE SOUSA ALVES","reu":"ITAU","objeto":"SEGURO CARTAO","processo":"5001149-18.2025.8.13.0329","valor_acordo":5500.00,"honorarios":2282.50,"status":"pago"},
         {"mes":"Abr/2026","data_pagamento":"17/04/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"SEGURO CARTAO","processo":"5001193-37.2025.8.13.0329","valor_acordo":4270.00,"honorarios":1772.05,"status":"pago"},
         {"mes":"Abr/2026","data_pagamento":"23/04/2026","cliente":"HELIO DE SOUZA","reu":"PAN","objeto":"344905159-2 / 339148026-0 / 336819430-8 / 334093468-0","processo":"5008533-48.2025.8.13.0647","valor_acordo":11000.00,"honorarios":4565.00,"status":"pago"},
-        {"mes":"Mai/2026","data_pagamento":"05/05/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"SEGURO CARTÃO + ITAU SEG VIDA PF + PGTO PROTECAO FAMILIAR","processo":"5000206-64.2026.8.13.0329","valor_acordo":4320.68,"honorarios":1793.08,"status":"pendente"},
+        {"mes":"Mai/2026","data_pagamento":"05/05/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"SEGURO CARTÃO + ITAU SEG VIDA PF + PGTO PROTECAO FAMILIAR","processo":"5000206-64.2026.8.13.0329","valor_acordo":4320.68,"honorarios":1793.08,"status":"pago"},
     ]
 
     execucoes = []
