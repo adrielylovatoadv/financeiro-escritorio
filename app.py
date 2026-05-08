@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 import streamlit.components.v1 as _components
+from datetime import date as _date
 
 st.set_page_config(page_title="Financeiro – Escritório", page_icon="💼", layout="wide")
 
@@ -85,6 +86,15 @@ COL_TO_MES = {
     "Jan":"Jan/2026","Fev":"Fev/2026","Mar":"Mar/2026","Abr":"Abr/2026",
     "Mai":"Mai/2026","Jun":"Jun/2026","Jul":"Jul/2026","Ago":"Ago/2026",
     "Set":"Set/2026","Out2":"Out/2026","Nov2":"Nov/2026","Dez2":"Dez/2026",
+}
+
+# Dia 10 de cada mês – usamos para auto-marcar fixas como pagas
+COL_DATE10 = {
+    "Out":  _date(2025,10,10), "Nov":  _date(2025,11,10), "Dez":  _date(2025,12,10),
+    "Jan":  _date(2026, 1,10), "Fev":  _date(2026, 2,10), "Mar":  _date(2026, 3,10),
+    "Abr":  _date(2026, 4,10), "Mai":  _date(2026, 5,10), "Jun":  _date(2026, 6,10),
+    "Jul":  _date(2026, 7,10), "Ago":  _date(2026, 8,10), "Set":  _date(2026, 9,10),
+    "Out2": _date(2026,10,10), "Nov2": _date(2026,11,10), "Dez2": _date(2026,12,10),
 }
 
 # Status: cores e ciclos
@@ -244,6 +254,16 @@ def dados_iniciais():
         "variaveis": variaveis,
     }
 
+def _auto_pago_fixas(d):
+    """Marca despesas fixas como pagas para meses cujo dia 10 já passou."""
+    hoje = _date.today()
+    for cat in d.get("fixas", {}):
+        if cat not in d["fixas_status"]: d["fixas_status"][cat] = {}
+        for col, dt10 in COL_DATE10.items():
+            if d["fixas"][cat].get(col, 0) > 0 and hoje >= dt10:
+                d["fixas_status"][cat][f"{col}_adriely"] = "pago"
+                d["fixas_status"][cat][f"{col}_eduarda"] = "pago"
+
 def carregar():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
@@ -258,8 +278,11 @@ def carregar():
         for a in d.get("acordos", []):
             if "objeto" not in a: a["objeto"] = ""
             if "data_pagamento" not in a: a["data_pagamento"] = ""
+        _auto_pago_fixas(d)
         return d
-    return dados_iniciais()
+    di = dados_iniciais()
+    _auto_pago_fixas(di)
+    return di
 
 def salvar(d):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -288,10 +311,19 @@ tab_dash, tab_ac, tab_ex, tab_hi, tab_fix, tab_var, tab_bal = tabs
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers de totais
 # ─────────────────────────────────────────────────────────────────────────────
-def total_honorarios():
-    t = sum(float(a.get("honorarios",0)) for a in d["acordos"])
-    t += sum(float(e.get("honorarios",0)) for e in d["execucoes"])
-    t += sum(float(h.get("valor",0)) for h in d["honorarios_iniciais"] if h.get("status")=="pago")
+def total_recebido():
+    """Soma dos valor_acordo dos acordos já recebidos (pago ou repasse)."""
+    return sum(float(a.get("valor_acordo",0)) for a in d["acordos"]
+               if a.get("status") in ("pago","repasse"))
+
+def total_honorarios_recebidos():
+    """Honorários já recebidos (status pago ou repasse)."""
+    t = sum(float(a.get("honorarios",0)) for a in d["acordos"]
+            if a.get("status") in ("pago","repasse"))
+    t += sum(float(e.get("honorarios",0)) for e in d["execucoes"]
+             if e.get("status") in ("pago","repasse"))
+    t += sum(float(h.get("valor",0)) for h in d["honorarios_iniciais"]
+             if h.get("status")=="pago")
     return t
 
 def total_honorarios_pendente():
@@ -310,21 +342,21 @@ def total_variaveis():
 # DASHBOARD
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_dash:
-    th = total_honorarios()
-    tp = total_honorarios_pendente()
-    tf = total_fixas()
-    tv = total_variaveis()
-    saldo = th - tf - tv
+    tr  = total_recebido()
+    thr = total_honorarios_recebidos()
+    tp  = total_honorarios_pendente()
+    tf  = total_fixas()
+    tv  = total_variaveis()
+    saldo = thr - tf - tv
 
-    c1,c2,c3,c4,c5 = st.columns(5)
+    c1,c2,c3,c4 = st.columns(4)
     cards = [
-        ("Honorários Recebidos", th, "verde"),
+        ("Total Recebido", tr, "azul"),
+        ("Honorários Recebidos", thr, "verde"),
         ("Pendente de Recebimento", tp, "vermelho" if tp>0 else "azul"),
-        ("Desp. Fixas", tf, "laranja"),
-        ("Desp. Variáveis", tv, "laranja"),
         ("Saldo Líquido", saldo, "verde" if saldo>=0 else "vermelho"),
     ]
-    for col,(titulo,val,cor) in zip([c1,c2,c3,c4,c5], cards):
+    for col,(titulo,val,cor) in zip([c1,c2,c3,c4], cards):
         with col:
             st.markdown(f"""<div class="bloco">
                 <div class="card-titulo">{titulo}</div>
@@ -676,7 +708,12 @@ with tab_fix:
     st.markdown("#### Status de Pagamento por Sócia (mês atual)")
     st.caption("Marque abaixo se cada sócia já pagou sua parte nas despesas fixas deste mês.")
 
-    mes_atual_col = "Abr"  # pode tornar selecionável depois
+    _hj = _date.today()
+    _m2c = {(2025,10):"Out",(2025,11):"Nov",(2025,12):"Dez",
+            (2026,1):"Jan",(2026,2):"Fev",(2026,3):"Mar",(2026,4):"Abr",(2026,5):"Mai",
+            (2026,6):"Jun",(2026,7):"Jul",(2026,8):"Ago",(2026,9):"Set",
+            (2026,10):"Out2",(2026,11):"Nov2",(2026,12):"Dez2"}
+    mes_atual_col = _m2c.get((_hj.year, _hj.month), "Mai")
     col_status = st.columns([3, 2, 2])
     col_status[0].markdown("<span style='font-size:11px;color:#7986cb;font-weight:600;'>Categoria</span>",
                            unsafe_allow_html=True)
