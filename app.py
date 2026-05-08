@@ -164,8 +164,8 @@ def dados_iniciais():
         {"mes":"Fev/2026","data_pagamento":"12/02/2026","cliente":"MARTA APARECIDA DE PAULA REIS","reu":"ITAU","objeto":"PGTO PROTECAO FAMILIAR","processo":"5001130-12.2025.8.13.0329","valor_acordo":3900.00,"honorarios":1618.50,"status":"pago"},
         {"mes":"Fev/2026","data_pagamento":"24/02/2026","cliente":"ANA MARIA DE OLIVEIRA","reu":"ITAÚ","objeto":"MENSAL COMBINAQUI","processo":"5001143-11.2025.8.13.0329","valor_acordo":3300.00,"honorarios":1369.50,"status":"pago"},
         {"mes":"Mar/2026","data_pagamento":"04/03/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"ITAU SEG AP PF","processo":"5001330-19.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
-        {"mes":"Mar/2026","data_pagamento":"04/03/2026","cliente":"BERNADETE NARDI DE PAULA","reu":"SANTANDER","objeto":"PENSAO 145353251","processo":"5001232-34.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
-        {"mes":"Mar/2026","data_pagamento":"09/03/2026","cliente":"ROSARIA LOGUERCIOS DOS SANTOS","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5000000-50.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"04/03/2026","cliente":"BERNADETE NARDI DE PAULA","reu":"SANTANDER","objeto":"PENSAO 145353251 · falta R$ 352,64 em cobrança","processo":"5001232-34.2025.8.13.0329","valor_acordo":3000.00,"honorarios":1245.00,"status":"pago"},
+        {"mes":"Mar/2026","data_pagamento":"09/03/2026","cliente":"ROSARIA LOGUERCIOS DOS SANTOS","reu":"ITAU","objeto":"MENSAL COMBINAQUI · R$ 4.500,00 recebido · falta R$ 636,68 em cobrança","processo":"5000000-50.2026.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
         {"mes":"Mar/2026","data_pagamento":"10/03/2026","cliente":"TEREZINHA IVONE DE SOUSA","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5000013-49.2026.8.13.0329","valor_acordo":4000.00,"honorarios":1660.00,"status":"pago"},
         {"mes":"Mar/2026","data_pagamento":"10/03/2026","cliente":"LENITA APARECIDA PAULA SOUSA","reu":"ITAU","objeto":"SISDEB","processo":"5001328-49.2025.8.13.0329","valor_acordo":3760.00,"honorarios":1560.40,"status":"pago"},
         {"mes":"Mar/2026","data_pagamento":"11/03/2026","cliente":"CLEIDE DE SOUSA ALVES","reu":"ITAU","objeto":"MENSAL COMBINAQUI","processo":"5001141-41.2025.8.13.0329","valor_acordo":5000.00,"honorarios":2075.00,"status":"pago"},
@@ -252,8 +252,43 @@ def dados_iniciais():
         "fixas_quem": fixas_quem,
         "fixas_status": fixas_status,
         "variaveis": variaveis,
-        "finalizados_sem_honor": [],
+        "finalizados_sem_honor": _finalizados_iniciais(),
     }
+
+def _finalizados_iniciais():
+    return [
+        {"cliente":"MARCIA MARQUES SILVA ESTEVÃO","reu":"CAMPOS ELISIOS",
+         "processo":"5000059-38.2026.8.13.0329","objeto":"OBRIGAÇÃO DE FAZER",
+         "data_finalizacao":"","motivo":"Extinção",
+         "observacao":"Pedido de extinção por cumprimento da obrigação"},
+        {"cliente":"MATHEUS SERRAGLIA REIS AMENT","reu":"ITAU",
+         "processo":"4006494-36.2026.8.26.0506","objeto":"TAR PACOTE",
+         "data_finalizacao":"","motivo":"Outro","observacao":"CANCELADO"},
+        {"cliente":"HELIO DE SOUZA","reu":"BANRISUL",
+         "processo":"5008843-54.2025.8.13.0647","objeto":"13176708",
+         "data_finalizacao":"","motivo":"Desistência",
+         "observacao":"Pedido de desistência homologado"},
+        {"cliente":"JOSE CARLOS DOS SANTOS","reu":"QI SOCIE",
+         "processo":"5001251-40.2025.8.13.0329","objeto":"0023336525JCD",
+         "data_finalizacao":"","motivo":"Desistência",
+         "observacao":"Pedido de desistência – réplica fora do prazo"},
+        {"cliente":"RUTH FELICIANA DA SILVA SOUZA","reu":"SANTANDER",
+         "processo":"5007260-34.2025.8.13.0647","objeto":"RMC n. 877742182-0",
+         "data_finalizacao":"","motivo":"Improcedência","observacao":""},
+        {"cliente":"HELIO DE SOUZA","reu":"BMG",
+         "processo":"5007845-86.2025.8.13.0647","objeto":"RMC 8932388 e 11105568",
+         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+        {"cliente":"ANA MARIA DE OLIVEIRA","reu":"FACTA",
+         "processo":"5001079-98.2025.8.13.0329","objeto":"73773620",
+         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+        {"cliente":"MATHEUS SERRAGLIA REIS AMENT","reu":"ITAU",
+         "processo":"4014073-35.2026.8.26.0506","objeto":"TAR PACOTE",
+         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+        {"cliente":"ANA MARIA DE OLIVEIRA","reu":"ITAU",
+         "processo":"5000918-88.2025.8.13.0329",
+         "objeto":"647932633 / 633079531 / 638223061 / 599824559",
+         "data_finalizacao":"","motivo":"Desistência","observacao":""},
+    ]
 
 def _auto_pago_fixas(d):
     """Marca despesas fixas como pagas para meses cujo dia 10 já passou."""
@@ -276,7 +311,17 @@ def carregar():
             d["fixas_quem"] = {cat:"dividido" for cat in d.get("fixas",{})}
         if "fixas_status" not in d:
             d["fixas_status"] = {cat:{} for cat in d.get("fixas",{})}
-        if "finalizados_sem_honor" not in d: d["finalizados_sem_honor"] = []
+        if "finalizados_sem_honor" not in d:
+            d["finalizados_sem_honor"] = _finalizados_iniciais()
+        if not d.get("_migrated_residuais"):
+            _res = {
+                "5001232-34.2025.8.13.0329": "PENSAO 145353251 · falta R$ 352,64 em cobrança",
+                "5000000-50.2026.8.13.0329": "MENSAL COMBINAQUI · R$ 4.500,00 recebido · falta R$ 636,68 em cobrança",
+            }
+            for a in d.get("acordos", []):
+                if a.get("processo") in _res:
+                    a["objeto"] = _res[a["processo"]]
+            d["_migrated_residuais"] = True
         for a in d.get("acordos", []):
             if "objeto" not in a: a["objeto"] = ""
             if "data_pagamento" not in a: a["data_pagamento"] = ""
@@ -1064,7 +1109,7 @@ with tab_fin:
                          unsafe_allow_html=True)
 
         to_del_fin = None
-        MOTIVOS = ["Improcedência","Acordo sem honorário","Desistência","Prescrição","Outro"]
+        MOTIVOS = ["Improcedência","Acordo sem honorário","Desistência","Extinção","Prescrição","Outro"]
         for i, p in enumerate(d["finalizados_sem_honor"]):
             cols = st.columns([1.6,1.0,2.2,1.5,1.2,1.5,1.8,0.4])
             p["cliente"] = cols[0].text_input("", value=p.get("cliente",""),
