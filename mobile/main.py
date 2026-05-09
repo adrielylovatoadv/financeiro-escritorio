@@ -8,7 +8,8 @@ import json
 import os
 import re
 import copy
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import uuid
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.clock import Clock
@@ -581,42 +582,31 @@ KV = """
     MDBoxLayout:
         orientation: "vertical"
         md_bg_color: 0.039, 0.059, 0.118, 1
-        MDBoxLayout:
+        ScrollView:
             size_hint_y: None
-            height: dp(60)
-        MDCard:
-            size_hint: None, None
-            size: dp(300), dp(200)
-            pos_hint: {"center_x": .5, "center_y": .55}
-            radius: [16]
-            elevation: 4
-            padding: dp(24)
-            md_bg_color: 0.051, 0.106, 0.235, 1
-            orientation: "vertical"
-            spacing: dp(12)
-            MDLabel:
-                text: "📋"
-                font_size: "40sp"
-                halign: "center"
-                size_hint_y: None
-                height: dp(50)
-            MDLabel:
-                id: ctrl_status_label
-                text: "Controle Processual"
-                font_style: "H6"
-                bold: True
-                halign: "center"
-                theme_text_color: "Custom"
-                text_color: 0.902, 0.914, 0.965, 1
-                size_hint_y: None
-                height: dp(32)
-            MDLabel:
-                id: ctrl_info_label
-                text: "Módulo em carregamento..."
-                font_style: "Body2"
-                halign: "center"
-                theme_text_color: "Custom"
-                text_color: 0.47, 0.522, 0.796, 1
+            height: dp(48)
+            do_scroll_y: False
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_x: None
+                width: dp(460)
+                padding: dp(6), dp(6)
+                spacing: dp(6)
+                NavButton:
+                    text: "Dashboard"
+                    on_release: root.goto("ctrl_dashboard")
+                NavButton:
+                    text: "Processos"
+                    on_release: root.goto("ctrl_processos")
+                NavButton:
+                    text: "Clientes"
+                    on_release: root.goto("ctrl_clientes")
+                NavButton:
+                    text: "Iniciais"
+                    on_release: root.goto("ctrl_iniciais")
+        ScreenManager:
+            id: ctrl_screens
+            transition: NoTransition()
 """
 
 
@@ -1876,10 +1866,842 @@ class CalculadoraTab(MDBoxLayout):
 
 
 # ─────────────────────────────────────────────────────────
+# CONTROLE — DADOS
+# ─────────────────────────────────────────────────────────
+ANDAMENTOS_PROCESSO = [
+    "AIJ - AUDIÊNCIA", "AC - AUDIÊNCIA DE CONCILIAÇÃO", "PROVAS", "RÉPLICA",
+    "AGUARDAR SENTENÇA", "EMENDAR", "AGUARDAR LIMINAR", "RÉPLICA SEM INTIMAÇÃO",
+    "PROVAS - JUNTAR NOTIFICAÇÃO", "RECURSO", "ACORDO", "ARQUIVADO", "OUTRO",
+]
+ANDAMENTOS_INICIAL = [
+    "FAZER INICIAL", "EM ANDAMENTO", "AGUARDAR", "AGUARDAR DOCS",
+    "AGUARDAR CONTRATO", "AGUARDAR LIMINAR", "ENVIAR NOTIFICAÇÃO",
+    "PROTOCOLADO", "ARQUIVADO",
+]
+RESPONSAVEIS = ["", "Adriely", "Eduarda", "Outro"]
+
+
+def novo_id():
+    return str(uuid.uuid4())[:8]
+
+
+def cor_andamento(status):
+    s = (status or "").upper()
+    if "AUDIÊNCIA" in s or "AIJ" in s:    return "🔴"
+    if "RÉPLICA" in s or "REPLICA" in s:  return "🟠"
+    if "PROVAS" in s:                      return "🔵"
+    if "SENTENÇA" in s:                    return "🟢"
+    if "EMENDAR" in s or "LIMINAR" in s:   return "🟡"
+    if "FAZER INICIAL" in s:               return "🟣"
+    if "AGUARDAR" in s:                    return "⚪"
+    if "PROTOCOLADO" in s:                 return "✅"
+    if "ARQUIVADO" in s:                   return "📁"
+    return "⚫"
+
+
+def carregar_controle():
+    path = get_data_path("controle_data.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    bundle = os.path.join(os.path.dirname(__file__), "data", "controle_data.json")
+    if os.path.exists(bundle):
+        with open(bundle, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"processos": [], "clientes": [], "iniciais": []}
+
+
+def salvar_controle(d):
+    path = get_data_path("controle_data.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2, default=str)
+
+
+# ─────────────────────────────────────────────────────────
+# CONTROLE — DASHBOARD
+# ─────────────────────────────────────────────────────────
+class ControleDashboardScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "ctrl_dashboard"
+
+    def on_enter(self):
+        self.build_ui()
+
+    def build_ui(self):
+        self.clear_widgets()
+        app = MDApp.get_running_app()
+        d = app.controle
+
+        hoje = date.today()
+        hoje_str = hoje.strftime("%Y-%m-%d")
+        lim3_str = (hoje + timedelta(days=3)).strftime("%Y-%m-%d")
+
+        processos = d.get("processos", [])
+        iniciais  = d.get("iniciais", [])
+        clientes  = d.get("clientes", [])
+
+        proc_hoje  = [p for p in processos if p.get("data", "")[:10] == hoje_str]
+        proc_3dias = [p for p in processos
+                      if hoje_str < p.get("data", "")[:10] <= lim3_str]
+        ini_pend   = [i for i in iniciais
+                      if i.get("andamento", "").upper() not in ("PROTOCOLADO", "ARQUIVADO")]
+
+        main_box = MDBoxLayout(orientation="vertical",
+                               md_bg_color=(0.039, 0.059, 0.118, 1))
+        scroll = MDScrollView()
+        box = MDBoxLayout(orientation="vertical", padding=dp(12),
+                          spacing=dp(10), size_hint_y=None)
+        box.bind(minimum_height=box.setter("height"))
+
+        box.add_widget(MDLabel(text="📋  Controle — Dashboard",
+                               font_style="H6", bold=True,
+                               theme_text_color="Custom",
+                               text_color=(0.902, 0.914, 0.965, 1),
+                               size_hint_y=None, height=dp(44)))
+
+        # Métricas
+        for txt, val, cor in [
+            ("📅 Prazos Hoje",        len(proc_hoje),  (0.996, 0.655, 0.149, 1)),
+            ("⚠️ Próx. 3 dias",       len(proc_3dias), (0.937, 0.325, 0.314, 1)),
+            ("📝 Iniciais Pendentes", len(ini_pend),   (0.259, 0.647, 0.961, 1)),
+            ("👥 Clientes",           len(clientes),   (0.298, 0.686, 0.314, 1)),
+        ]:
+            card = MDCard(orientation="vertical", size_hint_y=None,
+                          height=dp(70), radius=[10], elevation=2,
+                          padding=dp(12),
+                          md_bg_color=(0.051, 0.106, 0.235, 1))
+            card.add_widget(MDLabel(text=str(val), font_style="H5", bold=True,
+                                    theme_text_color="Custom", text_color=cor,
+                                    size_hint_y=None, height=dp(36)))
+            card.add_widget(MDLabel(text=txt, font_style="Caption",
+                                    theme_text_color="Custom",
+                                    text_color=(0.47, 0.522, 0.796, 1),
+                                    size_hint_y=None, height=dp(20)))
+            box.add_widget(card)
+
+        def add_proc_card(p, cor_borda):
+            try:
+                d_fmt = date.fromisoformat(p["data"][:10]).strftime("%d/%m/%Y")
+            except Exception:
+                d_fmt = p.get("data", "")[:10]
+            hora = f" às {p['hora']}" if p.get("hora") else ""
+            emoji = cor_andamento(p.get("andamento"))
+            card = MDCard(orientation="vertical", size_hint_y=None,
+                          height=dp(90), radius=[8], elevation=1,
+                          padding=dp(10),
+                          md_bg_color=(0.051, 0.106, 0.235, 1))
+            r1 = MDBoxLayout(size_hint_y=None, height=dp(26))
+            r1.add_widget(MDLabel(
+                text=f"{emoji}  {p.get('autor', '')} × {p.get('reu', '')}",
+                bold=True, theme_text_color="Custom",
+                text_color=cor_borda))
+            r2 = MDBoxLayout(size_hint_y=None, height=dp(20))
+            r2.add_widget(MDLabel(
+                text=f"{d_fmt}{hora}  |  {p.get('andamento', '')}",
+                font_style="Caption", theme_text_color="Custom",
+                text_color=(0.47, 0.522, 0.796, 1)))
+            r3 = MDBoxLayout(size_hint_y=None, height=dp(20))
+            r3.add_widget(MDLabel(
+                text=p.get("objeto", ""),
+                font_style="Caption", theme_text_color="Custom",
+                text_color=(0.902, 0.914, 0.965, 1)))
+            for r in [r1, r2, r3]:
+                card.add_widget(r)
+            box.add_widget(card)
+
+        if proc_hoje:
+            box.add_widget(MDLabel(text="🔴 Prazos de Hoje",
+                                   font_style="Subtitle1", bold=True,
+                                   theme_text_color="Custom",
+                                   text_color=(0.937, 0.325, 0.314, 1),
+                                   size_hint_y=None, height=dp(32)))
+            for p in sorted(proc_hoje, key=lambda x: x.get("hora", "")):
+                add_proc_card(p, (0.937, 0.325, 0.314, 1))
+
+        if proc_3dias:
+            box.add_widget(MDLabel(text="⚠️ Próximos 3 dias",
+                                   font_style="Subtitle1", bold=True,
+                                   theme_text_color="Custom",
+                                   text_color=(0.996, 0.655, 0.149, 1),
+                                   size_hint_y=None, height=dp(32)))
+            for p in sorted(proc_3dias, key=lambda x: (x.get("data", ""), x.get("hora", ""))):
+                add_proc_card(p, (0.996, 0.655, 0.149, 1))
+
+        if ini_pend:
+            box.add_widget(MDLabel(text="📝 Iniciais Pendentes",
+                                   font_style="Subtitle1", bold=True,
+                                   theme_text_color="Custom",
+                                   text_color=(0.259, 0.647, 0.961, 1),
+                                   size_hint_y=None, height=dp(32)))
+            for i in ini_pend[:10]:
+                card = MDCard(orientation="vertical", size_hint_y=None,
+                              height=dp(70), radius=[8], elevation=1,
+                              padding=dp(10),
+                              md_bg_color=(0.051, 0.106, 0.235, 1))
+                card.add_widget(MDLabel(
+                    text=f"🟣  {i.get('cliente', '')} × {i.get('reu', '')}",
+                    bold=True, theme_text_color="Custom",
+                    text_color=(0.902, 0.914, 0.965, 1),
+                    size_hint_y=None, height=dp(26)))
+                card.add_widget(MDLabel(
+                    text=f"{i.get('andamento', '')}  |  {i.get('objeto', '')}",
+                    font_style="Caption", theme_text_color="Custom",
+                    text_color=(0.47, 0.522, 0.796, 1),
+                    size_hint_y=None, height=dp(22)))
+                box.add_widget(card)
+
+        if not proc_hoje and not proc_3dias and not ini_pend:
+            box.add_widget(MDLabel(
+                text="✅ Nenhum prazo ou pendência para os próximos dias!",
+                halign="center", theme_text_color="Custom",
+                text_color=(0.298, 0.686, 0.314, 1),
+                size_hint_y=None, height=dp(60)))
+
+        scroll.add_widget(box)
+        main_box.add_widget(scroll)
+        self.add_widget(main_box)
+        self.md_bg_color = (0.039, 0.059, 0.118, 1)
+
+
+# ─────────────────────────────────────────────────────────
+# CONTROLE — PROCESSOS
+# ─────────────────────────────────────────────────────────
+class ControleProcessosScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "ctrl_processos"
+        self.dialog = None
+
+    def on_enter(self):
+        self.build_ui()
+
+    def build_ui(self):
+        self.clear_widgets()
+        app = MDApp.get_running_app()
+        d = app.controle
+        processos = sorted(d.get("processos", []),
+                           key=lambda x: (x.get("data", "9999"), x.get("hora", "")))
+
+        main_box = MDBoxLayout(orientation="vertical",
+                               md_bg_color=(0.039, 0.059, 0.118, 1))
+        hdr = MDBoxLayout(size_hint_y=None, height=dp(52),
+                          padding=(dp(12), dp(4)),
+                          md_bg_color=(0.039, 0.059, 0.118, 1))
+        hdr.add_widget(MDLabel(text="⚖️  Processos",
+                               font_style="H6", bold=True,
+                               theme_text_color="Custom",
+                               text_color=(0.902, 0.914, 0.965, 1)))
+        btn_add = MDRaisedButton(text="➕ Novo", size_hint_x=None,
+                                 width=dp(90), size_hint_y=None, height=dp(36),
+                                 md_bg_color=(0.102, 0.165, 0.369, 1))
+        btn_add.bind(on_release=lambda x: self.abrir_form(None))
+        hdr.add_widget(btn_add)
+        main_box.add_widget(hdr)
+
+        scroll = MDScrollView()
+        box = MDBoxLayout(orientation="vertical", padding=dp(8),
+                          spacing=dp(8), size_hint_y=None)
+        box.bind(minimum_height=box.setter("height"))
+
+        hoje = date.today()
+        for p in processos:
+            try:
+                d_obj = date.fromisoformat(p["data"][:10])
+                d_fmt = d_obj.strftime("%d/%m/%Y")
+                hora = f" às {p['hora']}" if p.get("hora") else ""
+                dias = (d_obj - hoje).days
+                if dias == 0:
+                    alert = " 🔴 HOJE"
+                    borda = (0.937, 0.325, 0.314, 1)
+                elif dias <= 3:
+                    alert = f" ⚠️ {dias}d"
+                    borda = (0.996, 0.655, 0.149, 1)
+                else:
+                    alert = ""
+                    borda = (0.259, 0.647, 0.961, 1)
+            except Exception:
+                d_fmt, hora, alert, borda = "", "", "", (0.47, 0.522, 0.796, 1)
+
+            emoji = cor_andamento(p.get("andamento"))
+            card = MDCard(orientation="vertical", size_hint_y=None,
+                          height=dp(110), radius=[10], elevation=2,
+                          padding=dp(10),
+                          md_bg_color=(0.051, 0.106, 0.235, 1))
+            r1 = MDBoxLayout(size_hint_y=None, height=dp(26))
+            r1.add_widget(MDLabel(
+                text=f"{emoji}  {p.get('autor', '')} × {p.get('reu', '')}{alert}",
+                bold=True, theme_text_color="Custom", text_color=borda))
+            r2 = MDBoxLayout(size_hint_y=None, height=dp(20))
+            r2.add_widget(MDLabel(
+                text=p.get("andamento", ""),
+                font_style="Caption", theme_text_color="Custom",
+                text_color=(0.47, 0.522, 0.796, 1)))
+            r3 = MDBoxLayout(size_hint_y=None, height=dp(22))
+            r3.add_widget(MDLabel(
+                text=f"{d_fmt}{hora}  |  {p.get('objeto', '')}",
+                font_style="Caption", theme_text_color="Custom",
+                text_color=(0.902, 0.914, 0.965, 1)))
+            r4 = MDBoxLayout(size_hint_y=None, height=dp(28))
+            resp = p.get("responsavel", "")
+            if resp:
+                r4.add_widget(MDLabel(text=f"👩‍⚖️ {resp}",
+                                      font_style="Caption",
+                                      theme_text_color="Custom",
+                                      text_color=(0.47, 0.522, 0.796, 1)))
+            pid = p["id"]
+            btn_e = MDIconButton(icon="pencil", theme_icon_color="Custom",
+                                 icon_color=(0.47, 0.522, 0.796, 1),
+                                 size_hint_x=None, width=dp(36))
+            btn_d = MDIconButton(icon="delete", theme_icon_color="Custom",
+                                 icon_color=(0.937, 0.325, 0.314, 1),
+                                 size_hint_x=None, width=dp(36))
+            btn_e.bind(on_release=lambda x, pid=pid: self.abrir_form(
+                next((p for p in app.controle["processos"] if p["id"] == pid), None)))
+            btn_d.bind(on_release=lambda x, pid=pid: self.deletar(pid))
+            r4.add_widget(btn_e)
+            r4.add_widget(btn_d)
+            for r in [r1, r2, r3, r4]:
+                card.add_widget(r)
+            box.add_widget(card)
+
+        if not processos:
+            box.add_widget(MDLabel(text="Nenhum processo cadastrado.",
+                                   halign="center", theme_text_color="Custom",
+                                   text_color=(0.47, 0.522, 0.796, 1),
+                                   size_hint_y=None, height=dp(60)))
+
+        scroll.add_widget(box)
+        main_box.add_widget(scroll)
+        self.add_widget(main_box)
+
+    def abrir_form(self, proc):
+        app = MDApp.get_running_app()
+        d = app.controle
+        p = proc or {}
+        novo = proc is None
+
+        f_autor = MDTextField(hint_text="Autor (Cliente)*",
+                              text=p.get("autor", ""),
+                              mode="rectangle", size_hint_y=None, height=dp(48))
+        f_reu = MDTextField(hint_text="Réu",
+                            text=p.get("reu", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_obj = MDTextField(hint_text="Objeto",
+                            text=p.get("objeto", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_proc = MDTextField(hint_text="Número do Processo",
+                             text=p.get("numero_processo", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_data = MDTextField(hint_text="Data (DD/MM/AAAA)",
+                             text=(date.fromisoformat(p["data"][:10]).strftime("%d/%m/%Y")
+                                   if p.get("data") else ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_hora = MDTextField(hint_text="Hora (ex: 14:00)",
+                             text=p.get("hora", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_and = MDTextField(hint_text="Andamento",
+                            text=p.get("andamento", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_resp = MDTextField(hint_text="Responsável (Adriely/Eduarda)",
+                             text=p.get("responsavel", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_obs = MDTextField(hint_text="Observações",
+                            text=p.get("observacoes", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+
+        form = MDBoxLayout(orientation="vertical", spacing=dp(8),
+                           size_hint_y=None, height=dp(460))
+        for f in [f_autor, f_reu, f_obj, f_proc, f_data, f_hora, f_and, f_resp, f_obs]:
+            form.add_widget(f)
+
+        def salvar(x):
+            data_iso = ""
+            try:
+                data_iso = datetime.strptime(f_data.text.strip(), "%d/%m/%Y").date().isoformat()
+            except ValueError:
+                pass
+            entry = {
+                "id": p.get("id", novo_id()),
+                "autor": f_autor.text.strip(),
+                "reu": f_reu.text.strip(),
+                "objeto": f_obj.text.strip(),
+                "numero_processo": f_proc.text.strip(),
+                "data": data_iso,
+                "hora": f_hora.text.strip(),
+                "andamento": f_and.text.strip(),
+                "responsavel": f_resp.text.strip(),
+                "observacoes": f_obs.text.strip(),
+                "criado_em": p.get("criado_em", datetime.now().isoformat()),
+            }
+            if novo:
+                d["processos"].append(entry)
+            else:
+                d["processos"] = [entry if x["id"] == entry["id"] else x
+                                  for x in d["processos"]]
+            salvar_controle(d)
+            self.dialog.dismiss()
+            self.build_ui()
+
+        self.dialog = MDDialog(
+            title="Novo Processo" if novo else "Editar Processo",
+            type="custom", content_cls=form,
+            buttons=[
+                MDFlatButton(text="CANCELAR",
+                             on_release=lambda x: self.dialog.dismiss()),
+                MDRaisedButton(text="SALVAR", on_release=salvar),
+            ],
+        )
+        self.dialog.open()
+
+    def deletar(self, pid):
+        app = MDApp.get_running_app()
+        d = app.controle
+
+        def confirmar(x):
+            d["processos"] = [p for p in d["processos"] if p["id"] != pid]
+            salvar_controle(d)
+            dlg.dismiss()
+            self.build_ui()
+
+        dlg = MDDialog(title="Confirmar", text="Remover este processo?",
+                       buttons=[
+                           MDFlatButton(text="NÃO", on_release=lambda x: dlg.dismiss()),
+                           MDRaisedButton(text="SIM", on_release=confirmar,
+                                          md_bg_color=(0.369, 0.071, 0.071, 1)),
+                       ])
+        dlg.open()
+
+
+# ─────────────────────────────────────────────────────────
+# CONTROLE — CLIENTES
+# ─────────────────────────────────────────────────────────
+class ControleClientesScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "ctrl_clientes"
+        self.dialog = None
+
+    def on_enter(self):
+        self.build_ui()
+
+    def build_ui(self):
+        self.clear_widgets()
+        app = MDApp.get_running_app()
+        d = app.controle
+        clientes = sorted(d.get("clientes", []), key=lambda x: x.get("nome", ""))
+
+        main_box = MDBoxLayout(orientation="vertical",
+                               md_bg_color=(0.039, 0.059, 0.118, 1))
+        hdr = MDBoxLayout(size_hint_y=None, height=dp(52),
+                          padding=(dp(12), dp(4)),
+                          md_bg_color=(0.039, 0.059, 0.118, 1))
+        hdr.add_widget(MDLabel(text=f"👥  Clientes ({len(clientes)})",
+                               font_style="H6", bold=True,
+                               theme_text_color="Custom",
+                               text_color=(0.902, 0.914, 0.965, 1)))
+        btn_add = MDRaisedButton(text="➕", size_hint_x=None,
+                                 width=dp(56), size_hint_y=None, height=dp(36),
+                                 md_bg_color=(0.102, 0.165, 0.369, 1))
+        btn_add.bind(on_release=lambda x: self.abrir_form(None))
+        hdr.add_widget(btn_add)
+        main_box.add_widget(hdr)
+
+        scroll = MDScrollView()
+        box = MDBoxLayout(orientation="vertical", padding=dp(8),
+                          spacing=dp(8), size_hint_y=None)
+        box.bind(minimum_height=box.setter("height"))
+
+        for c in clientes:
+            card = MDCard(orientation="vertical", size_hint_y=None,
+                          height=dp(100), radius=[10], elevation=2,
+                          padding=dp(10),
+                          md_bg_color=(0.051, 0.106, 0.235, 1))
+            r1 = MDBoxLayout(size_hint_y=None, height=dp(28))
+            r1.add_widget(MDLabel(text=c.get("nome", "—"),
+                                  bold=True, theme_text_color="Custom",
+                                  text_color=(0.902, 0.914, 0.965, 1)))
+            r2 = MDBoxLayout(size_hint_y=None, height=dp(20))
+            r2.add_widget(MDLabel(
+                text=f"📞 {c.get('telefone', '')}  |  CPF: {c.get('cpf', '')}",
+                font_style="Caption", theme_text_color="Custom",
+                text_color=(0.47, 0.522, 0.796, 1)))
+            r3 = MDBoxLayout(size_hint_y=None, height=dp(28))
+            info = c.get("informacoes", "")
+            if info:
+                r3.add_widget(MDLabel(text=info[:60] + ("..." if len(info) > 60 else ""),
+                                      font_style="Caption",
+                                      theme_text_color="Custom",
+                                      text_color=(0.259, 0.647, 0.961, 1)))
+            cid = c["id"]
+            btn_e = MDIconButton(icon="pencil", theme_icon_color="Custom",
+                                 icon_color=(0.47, 0.522, 0.796, 1),
+                                 size_hint_x=None, width=dp(36))
+            btn_d = MDIconButton(icon="delete", theme_icon_color="Custom",
+                                 icon_color=(0.937, 0.325, 0.314, 1),
+                                 size_hint_x=None, width=dp(36))
+            btn_e.bind(on_release=lambda x, cid=cid: self.abrir_form(
+                next((c for c in app.controle["clientes"] if c["id"] == cid), None)))
+            btn_d.bind(on_release=lambda x, cid=cid: self.deletar(cid))
+            r3.add_widget(btn_e)
+            r3.add_widget(btn_d)
+            for r in [r1, r2, r3]:
+                card.add_widget(r)
+            box.add_widget(card)
+
+        if not clientes:
+            box.add_widget(MDLabel(text="Nenhum cliente cadastrado.",
+                                   halign="center", theme_text_color="Custom",
+                                   text_color=(0.47, 0.522, 0.796, 1),
+                                   size_hint_y=None, height=dp(60)))
+
+        scroll.add_widget(box)
+        main_box.add_widget(scroll)
+        self.add_widget(main_box)
+
+    def abrir_form(self, cli):
+        app = MDApp.get_running_app()
+        d = app.controle
+        c = cli or {}
+        novo = cli is None
+
+        f_nome = MDTextField(hint_text="Nome Completo*",
+                             text=c.get("nome", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_tel = MDTextField(hint_text="Telefone",
+                            text=c.get("telefone", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_cpf = MDTextField(hint_text="CPF",
+                            text=c.get("cpf", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_email = MDTextField(hint_text="E-mail",
+                              text=c.get("email", ""),
+                              mode="rectangle", size_hint_y=None, height=dp(48))
+        f_apos = MDTextField(hint_text="Tipo de Aposentadoria",
+                             text=c.get("tipo_aposentadoria", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_gov = MDTextField(hint_text="Senha Gov.br",
+                            text=c.get("senha_gov", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_serasa = MDTextField(hint_text="Senha Serasa",
+                               text=c.get("senha_serasa", ""),
+                               mode="rectangle", size_hint_y=None, height=dp(48))
+        f_end = MDTextField(hint_text="Endereço",
+                            text=c.get("endereco", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_info = MDTextField(hint_text="Informações relevantes",
+                             text=c.get("informacoes", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+
+        form = MDBoxLayout(orientation="vertical", spacing=dp(8),
+                           size_hint_y=None, height=dp(460))
+        for f in [f_nome, f_tel, f_cpf, f_email, f_apos, f_gov, f_serasa, f_end, f_info]:
+            form.add_widget(f)
+
+        def salvar(x):
+            if not f_nome.text.strip():
+                Snackbar(text="Informe o nome.").open()
+                return
+            entry = {
+                "id": c.get("id", novo_id()),
+                "nome": f_nome.text.strip(),
+                "telefone": f_tel.text.strip(),
+                "cpf": f_cpf.text.strip(),
+                "email": f_email.text.strip(),
+                "tipo_aposentadoria": f_apos.text.strip(),
+                "senha_gov": f_gov.text.strip(),
+                "senha_serasa": f_serasa.text.strip(),
+                "endereco": f_end.text.strip(),
+                "informacoes": f_info.text.strip(),
+                "criado_em": c.get("criado_em", datetime.now().isoformat()),
+            }
+            if novo:
+                d["clientes"].append(entry)
+            else:
+                d["clientes"] = [entry if x["id"] == entry["id"] else x
+                                  for x in d["clientes"]]
+            salvar_controle(d)
+            self.dialog.dismiss()
+            self.build_ui()
+
+        self.dialog = MDDialog(
+            title="Novo Cliente" if novo else "Editar Cliente",
+            type="custom", content_cls=form,
+            buttons=[
+                MDFlatButton(text="CANCELAR",
+                             on_release=lambda x: self.dialog.dismiss()),
+                MDRaisedButton(text="SALVAR", on_release=salvar),
+            ],
+        )
+        self.dialog.open()
+
+    def deletar(self, cid):
+        app = MDApp.get_running_app()
+        d = app.controle
+
+        def confirmar(x):
+            d["clientes"] = [c for c in d["clientes"] if c["id"] != cid]
+            salvar_controle(d)
+            dlg.dismiss()
+            self.build_ui()
+
+        dlg = MDDialog(title="Confirmar", text="Remover este cliente?",
+                       buttons=[
+                           MDFlatButton(text="NÃO", on_release=lambda x: dlg.dismiss()),
+                           MDRaisedButton(text="SIM", on_release=confirmar,
+                                          md_bg_color=(0.369, 0.071, 0.071, 1)),
+                       ])
+        dlg.open()
+
+
+# ─────────────────────────────────────────────────────────
+# CONTROLE — INICIAIS
+# ─────────────────────────────────────────────────────────
+class ControleIniciaisScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.name = "ctrl_iniciais"
+        self.dialog = None
+
+    def on_enter(self):
+        self.build_ui()
+
+    def build_ui(self):
+        self.clear_widgets()
+        app = MDApp.get_running_app()
+        d = app.controle
+        iniciais = d.get("iniciais", [])
+        pendentes = [i for i in iniciais
+                     if i.get("andamento", "").upper() not in ("PROTOCOLADO", "ARQUIVADO")]
+
+        main_box = MDBoxLayout(orientation="vertical",
+                               md_bg_color=(0.039, 0.059, 0.118, 1))
+        hdr = MDBoxLayout(size_hint_y=None, height=dp(52),
+                          padding=(dp(12), dp(4)),
+                          md_bg_color=(0.039, 0.059, 0.118, 1))
+        hdr.add_widget(MDLabel(text=f"📝  Iniciais ({len(pendentes)} pendentes)",
+                               font_style="H6", bold=True,
+                               theme_text_color="Custom",
+                               text_color=(0.902, 0.914, 0.965, 1)))
+        btn_add = MDRaisedButton(text="➕", size_hint_x=None,
+                                 width=dp(56), size_hint_y=None, height=dp(36),
+                                 md_bg_color=(0.102, 0.165, 0.369, 1))
+        btn_add.bind(on_release=lambda x: self.abrir_form(None))
+        hdr.add_widget(btn_add)
+        main_box.add_widget(hdr)
+
+        scroll = MDScrollView()
+        box = MDBoxLayout(orientation="vertical", padding=dp(8),
+                          spacing=dp(8), size_hint_y=None)
+        box.bind(minimum_height=box.setter("height"))
+
+        for i in pendentes:
+            emoji = cor_andamento(i.get("andamento"))
+            card = MDCard(orientation="vertical", size_hint_y=None,
+                          height=dp(100), radius=[10], elevation=2,
+                          padding=dp(10),
+                          md_bg_color=(0.051, 0.106, 0.235, 1))
+            r1 = MDBoxLayout(size_hint_y=None, height=dp(26))
+            r1.add_widget(MDLabel(
+                text=f"{emoji}  {i.get('cliente', '')} × {i.get('reu', '')}",
+                bold=True, theme_text_color="Custom",
+                text_color=(0.902, 0.914, 0.965, 1)))
+            r2 = MDBoxLayout(size_hint_y=None, height=dp(20))
+            resp = i.get("responsavel", "")
+            r2.add_widget(MDLabel(
+                text=f"{i.get('andamento', '')}  {('| ' + resp) if resp else ''}",
+                font_style="Caption", theme_text_color="Custom",
+                text_color=(0.47, 0.522, 0.796, 1)))
+            r3 = MDBoxLayout(size_hint_y=None, height=dp(30))
+            r3.add_widget(MDLabel(text=i.get("objeto", ""),
+                                  font_style="Caption",
+                                  theme_text_color="Custom",
+                                  text_color=(0.259, 0.647, 0.961, 1)))
+            iid = i["id"]
+            btn_prot = MDRaisedButton(
+                text="Protocolar", size_hint_x=None, width=dp(110),
+                md_bg_color=(0.102, 0.165, 0.369, 1),
+                size_hint_y=None, height=dp(28))
+            btn_prot.bind(on_release=lambda x, iid=iid: self.protocolar(iid))
+            btn_e = MDIconButton(icon="pencil", theme_icon_color="Custom",
+                                 icon_color=(0.47, 0.522, 0.796, 1),
+                                 size_hint_x=None, width=dp(36))
+            btn_d = MDIconButton(icon="delete", theme_icon_color="Custom",
+                                 icon_color=(0.937, 0.325, 0.314, 1),
+                                 size_hint_x=None, width=dp(36))
+            btn_e.bind(on_release=lambda x, iid=iid: self.abrir_form(
+                next((i for i in app.controle["iniciais"] if i["id"] == iid), None)))
+            btn_d.bind(on_release=lambda x, iid=iid: self.deletar(iid))
+            r3.add_widget(btn_prot)
+            r3.add_widget(btn_e)
+            r3.add_widget(btn_d)
+            for r in [r1, r2, r3]:
+                card.add_widget(r)
+            box.add_widget(card)
+
+        if not pendentes:
+            box.add_widget(MDLabel(
+                text="✅ Nenhuma inicial pendente!",
+                halign="center", theme_text_color="Custom",
+                text_color=(0.298, 0.686, 0.314, 1),
+                size_hint_y=None, height=dp(60)))
+
+        scroll.add_widget(box)
+        main_box.add_widget(scroll)
+        self.add_widget(main_box)
+
+    def abrir_form(self, ini):
+        app = MDApp.get_running_app()
+        d = app.controle
+        i = ini or {}
+        novo = ini is None
+
+        f_cli = MDTextField(hint_text="Cliente*", text=i.get("cliente", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_reu = MDTextField(hint_text="Réu", text=i.get("reu", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_obj = MDTextField(hint_text="Objeto", text=i.get("objeto", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_and = MDTextField(hint_text="Andamento (ex: FAZER INICIAL)",
+                            text=i.get("andamento", "FAZER INICIAL"),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_resp = MDTextField(hint_text="Responsável (Adriely/Eduarda)",
+                             text=i.get("responsavel", ""),
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_obs = MDTextField(hint_text="Observações", text=i.get("observacoes", ""),
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+
+        form = MDBoxLayout(orientation="vertical", spacing=dp(8),
+                           size_hint_y=None, height=dp(312))
+        for f in [f_cli, f_reu, f_obj, f_and, f_resp, f_obs]:
+            form.add_widget(f)
+
+        def salvar(x):
+            entry = {
+                "id": i.get("id", novo_id()),
+                "cliente": f_cli.text.strip(),
+                "reu": f_reu.text.strip(),
+                "objeto": f_obj.text.strip(),
+                "andamento": f_and.text.strip() or "FAZER INICIAL",
+                "responsavel": f_resp.text.strip(),
+                "observacoes": f_obs.text.strip(),
+                "criado_em": i.get("criado_em", datetime.now().isoformat()),
+            }
+            if novo:
+                d["iniciais"].append(entry)
+            else:
+                d["iniciais"] = [entry if x["id"] == entry["id"] else x
+                                  for x in d["iniciais"]]
+            salvar_controle(d)
+            self.dialog.dismiss()
+            self.build_ui()
+
+        self.dialog = MDDialog(
+            title="Nova Inicial" if novo else "Editar Inicial",
+            type="custom", content_cls=form,
+            buttons=[
+                MDFlatButton(text="CANCELAR",
+                             on_release=lambda x: self.dialog.dismiss()),
+                MDRaisedButton(text="SALVAR", on_release=salvar),
+            ],
+        )
+        self.dialog.open()
+
+    def protocolar(self, iid):
+        app = MDApp.get_running_app()
+        d = app.controle
+        ini = next((i for i in d["iniciais"] if i["id"] == iid), None)
+        if not ini:
+            return
+
+        f_num = MDTextField(hint_text="Número do Processo*",
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+        f_data = MDTextField(hint_text="Data do prazo (DD/MM/AAAA)",
+                             mode="rectangle", size_hint_y=None, height=dp(48))
+        f_and = MDTextField(hint_text="Andamento inicial",
+                            text="AC - AUDIÊNCIA DE CONCILIAÇÃO",
+                            mode="rectangle", size_hint_y=None, height=dp(48))
+
+        form = MDBoxLayout(orientation="vertical", spacing=dp(8),
+                           size_hint_y=None, height=dp(160))
+        for f in [f_num, f_data, f_and]:
+            form.add_widget(f)
+
+        def confirmar(x):
+            if not f_num.text.strip():
+                Snackbar(text="Informe o número do processo.").open()
+                return
+            data_iso = ""
+            try:
+                data_iso = datetime.strptime(f_data.text.strip(), "%d/%m/%Y").date().isoformat()
+            except ValueError:
+                pass
+            novo_proc = {
+                "id": novo_id(),
+                "autor": ini.get("cliente", ""),
+                "reu": ini.get("reu", ""),
+                "objeto": ini.get("objeto", ""),
+                "numero_processo": f_num.text.strip(),
+                "data": data_iso,
+                "hora": "",
+                "andamento": f_and.text.strip(),
+                "responsavel": ini.get("responsavel", ""),
+                "observacoes": ini.get("observacoes", ""),
+                "criado_em": datetime.now().isoformat(),
+            }
+            d["processos"].append(novo_proc)
+            for ii in d["iniciais"]:
+                if ii["id"] == iid:
+                    ii["andamento"] = "PROTOCOLADO"
+                    break
+            salvar_controle(d)
+            dlg.dismiss()
+            Snackbar(text="✅ Processo criado!").open()
+            self.build_ui()
+
+        dlg = MDDialog(
+            title="Protocolar → Criar Processo",
+            type="custom", content_cls=form,
+            buttons=[
+                MDFlatButton(text="CANCELAR", on_release=lambda x: dlg.dismiss()),
+                MDRaisedButton(text="PROTOCOLAR", on_release=confirmar),
+            ],
+        )
+        dlg.open()
+
+    def deletar(self, iid):
+        app = MDApp.get_running_app()
+        d = app.controle
+
+        def confirmar(x):
+            d["iniciais"] = [i for i in d["iniciais"] if i["id"] != iid]
+            salvar_controle(d)
+            dlg.dismiss()
+            self.build_ui()
+
+        dlg = MDDialog(title="Confirmar", text="Remover esta inicial?",
+                       buttons=[
+                           MDFlatButton(text="NÃO", on_release=lambda x: dlg.dismiss()),
+                           MDRaisedButton(text="SIM", on_release=confirmar,
+                                          md_bg_color=(0.369, 0.071, 0.071, 1)),
+                       ])
+        dlg.open()
+
+
+# ─────────────────────────────────────────────────────────
 # CONTROLE TAB
 # ─────────────────────────────────────────────────────────
 class ControleTab(MDBoxLayout):
-    pass
+    def on_kv_post(self, base_widget):
+        sm = self.ids.ctrl_screens
+        for cls in [ControleDashboardScreen, ControleProcessosScreen,
+                    ControleClientesScreen, ControleIniciaisScreen]:
+            sm.add_widget(cls())
+        sm.current = "ctrl_dashboard"
+
+    def goto(self, name):
+        self.ids.ctrl_screens.current = name
 
 
 # ─────────────────────────────────────────────────────────
@@ -1909,6 +2731,7 @@ class LEADVApp(MDApp):
         super().__init__(**kwargs)
         self.dados = {}
         self.indices = {}
+        self.controle = {}
 
     def build(self):
         self.theme_cls.theme_style = "Dark"
@@ -1923,9 +2746,11 @@ class LEADVApp(MDApp):
     def on_start(self):
         self.dados = carregar_financeiro()
         self.indices = carregar_indices()
+        self.controle = carregar_controle()
 
     def on_stop(self):
         salvar_financeiro(self.dados)
+        salvar_controle(self.controle)
 
 
 if __name__ == "__main__":
