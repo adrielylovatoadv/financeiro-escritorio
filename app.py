@@ -515,15 +515,15 @@ with tab_ac:
         if st.button("💾 Salvar", key="sv_ac"):
             salvar(d); st.success("Salvo!")
 
-    # cabeçalho
-    hdr = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.5,0.4])
-    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Processo","Objeto","Valor Acordo","Honorários","","Del"]):
+    # cabeçalho (sem coluna Processo)
+    hdr = st.columns([1.0,1.0,2.0,0.8,2.0,1.1,1.1,0.5,0.4])
+    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Objeto","Valor Acordo","Honorários","","Del"]):
         col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                      unsafe_allow_html=True)
 
     to_del = None; mudou_ac = False
     for i, a in enumerate(d["acordos"]):
-        cols = st.columns([1.0,1.0,1.6,0.8,2.2,1.5,1.1,1.1,0.5,0.4])
+        cols = st.columns([1.0,1.0,2.0,0.8,2.0,1.1,1.1,0.5,0.4])
         a["mes"] = cols[0].selectbox("", MESES,
             index=MESES.index(a["mes"]) if a.get("mes") in MESES else 0,
             key=f"ac_mes_{i}", label_visibility="collapsed")
@@ -533,24 +533,22 @@ with tab_ac:
             key=f"ac_cli_{i}", label_visibility="collapsed")
         a["reu"] = cols[3].text_input("", value=a.get("reu",""),
             key=f"ac_reu_{i}", label_visibility="collapsed")
-        a["processo"] = cols[4].text_input("", value=a.get("processo",""),
-            key=f"ac_proc_{i}", label_visibility="collapsed")
-        a["objeto"] = cols[5].text_input("", value=a.get("objeto",""),
+        a["objeto"] = cols[4].text_input("", value=a.get("objeto",""),
             key=f"ac_obj_{i}", label_visibility="collapsed")
 
         va_str = st.session_state.get(f"ac_va_{i}", _vs(a.get("valor_acordo",0)))
-        va_new = cols[6].text_input("", value=va_str, placeholder="0,00",
+        va_new = cols[5].text_input("", value=va_str, placeholder="0,00",
             key=f"ac_va_{i}", label_visibility="collapsed")
         try: va = float(va_new.replace(".","").replace(",",".")) if va_new else 0.0
         except: va = 0.0
         a["valor_acordo"] = va
         a["honorarios"] = calc_acordo(va)
 
-        cols[7].markdown(f"""<div style='padding-top:8px;font-size:13px;font-weight:600;color:#4caf50;'>
+        cols[6].markdown(f"""<div style='padding-top:8px;font-size:13px;font-weight:600;color:#4caf50;'>
             {_fmt(a["honorarios"])}</div>""", unsafe_allow_html=True)
 
-        if _st3(cols[8], f"ac_st_{i}", a): mudou_ac = True
-        if cols[9].button("🗑️", key=f"ac_del_{i}"): to_del = i
+        if _st3(cols[7], f"ac_st_{i}", a): mudou_ac = True
+        if cols[8].button("🗑️", key=f"ac_del_{i}"): to_del = i
 
     if mudou_ac: salvar(d); st.rerun()
 
@@ -595,14 +593,14 @@ with tab_ex:
             <span style="color:#5c6bc0;font-size:14px;">Nenhuma execução cadastrada ainda.</span>
         </div>""", unsafe_allow_html=True)
     else:
-        hdr = st.columns([1.4,1.8,1.2,2.4,1.3,1.3,1.3,1.1,0.5])
-        for col, lbl in zip(hdr,["Mês","Cliente","Réu","Processo","Val. Percebido","Sucumbência","Honorários","Status",""]):
+        hdr = st.columns([1.4,2.2,1.2,1.8,1.8,1.8,0.5,0.5])
+        for col, lbl in zip(hdr,["Mês","Cliente","Réu","Val. Percebido","Sucumbência","Honorários","",""]):
             col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                          unsafe_allow_html=True)
 
         to_del_e = None; mudou_ex = False
         for i, e in enumerate(d["execucoes"]):
-            cols = st.columns([1.4,1.8,1.2,2.4,1.3,1.3,1.3,0.5,0.5])
+            cols = st.columns([1.4,2.2,1.2,1.8,1.8,1.8,0.5,0.5])
             e["mes"] = cols[0].selectbox("", MESES,
                 index=MESES.index(e["mes"]) if e.get("mes") in MESES else 0,
                 key=f"ex_mes_{i}", label_visibility="collapsed")
@@ -610,17 +608,15 @@ with tab_ex:
                 key=f"ex_cli_{i}", label_visibility="collapsed")
             e["reu"] = cols[2].text_input("", value=e.get("reu",""),
                 key=f"ex_reu_{i}", label_visibility="collapsed")
-            e["processo"] = cols[3].text_input("", value=e.get("processo",""),
-                key=f"ex_proc_{i}", label_visibility="collapsed")
 
             vp_str = st.session_state.get(f"ex_vp_{i}", _vs(e.get("valor_percebido",0)))
-            vp_new = cols[4].text_input("", value=vp_str, placeholder="0,00",
+            vp_new = cols[3].text_input("", value=vp_str, placeholder="0,00",
                 key=f"ex_vp_{i}", label_visibility="collapsed")
             try: vp = float(vp_new.replace(".","").replace(",",".")) if vp_new else 0.0
             except: vp = 0.0
 
             sc_str = st.session_state.get(f"ex_sc_{i}", _vs(e.get("sucumbencia",0)))
-            sc_new = cols[5].text_input("", value=sc_str, placeholder="0,00",
+            sc_new = cols[4].text_input("", value=sc_str, placeholder="0,00",
                 key=f"ex_sc_{i}", label_visibility="collapsed")
             try: sc = float(sc_new.replace(".","").replace(",",".")) if sc_new else 0.0
             except: sc = 0.0
@@ -629,10 +625,10 @@ with tab_ex:
             e["sucumbencia"] = sc
             e["honorarios"] = calc_execucao(vp, sc)
 
-            cols[6].markdown(f"""<div style='padding-top:8px;font-size:14px;font-weight:600;color:#4caf50;'>
+            cols[5].markdown(f"""<div style='padding-top:8px;font-size:14px;font-weight:600;color:#4caf50;'>
                 {_fmt(e['honorarios'])}</div>""", unsafe_allow_html=True)
-            if _st3(cols[7], f"ex_st_{i}", e): mudou_ex = True
-            if cols[8].button("🗑️", key=f"ex_del_{i}"): to_del_e = i
+            if _st3(cols[6], f"ex_st_{i}", e): mudou_ex = True
+            if cols[7].button("🗑️", key=f"ex_del_{i}"): to_del_e = i
 
         if mudou_ex: salvar(d); st.rerun()
         if to_del_e is not None:
@@ -656,32 +652,30 @@ with tab_hi:
 
     st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
 
-    hdr = st.columns([2,2.5,1.5,1.5,2,0.5,0.5])
-    for col, lbl in zip(hdr,["Cliente","Processo","Valor","Data Pagto","Observação","","Del"]):
+    hdr = st.columns([3,1.8,1.8,2.5,0.5,0.5])
+    for col, lbl in zip(hdr,["Cliente","Valor","Data Pagto","Observação","","Del"]):
         col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                      unsafe_allow_html=True)
 
     to_del_h = None; mudou_hi = False
     for i, h in enumerate(d["honorarios_iniciais"]):
-        cols = st.columns([2,2.5,1.5,1.5,2,0.5,0.5])
+        cols = st.columns([3,1.8,1.8,2.5,0.5,0.5])
         h["cliente"] = cols[0].text_input("", value=h.get("cliente",""),
             key=f"hi_cli_{i}", label_visibility="collapsed")
-        h["processo"] = cols[1].text_input("", value=h.get("processo",""),
-            key=f"hi_proc_{i}", label_visibility="collapsed")
 
         vh_str = st.session_state.get(f"hi_val_{i}", _vs(h.get("valor",0)))
-        vh_new = cols[2].text_input("", value=vh_str, placeholder="0,00",
+        vh_new = cols[1].text_input("", value=vh_str, placeholder="0,00",
             key=f"hi_val_{i}", label_visibility="collapsed")
         try: vhv = float(vh_new.replace(".","").replace(",",".")) if vh_new else 0.0
         except: vhv = 0.0
         h["valor"] = vhv
 
-        h["data_pagamento"] = cols[3].text_input("", value=h.get("data_pagamento",""),
+        h["data_pagamento"] = cols[2].text_input("", value=h.get("data_pagamento",""),
             placeholder="DD/MM/AAAA", key=f"hi_dt_{i}", label_visibility="collapsed")
-        h["observacao"] = cols[4].text_input("", value=h.get("observacao",""),
+        h["observacao"] = cols[3].text_input("", value=h.get("observacao",""),
             key=f"hi_obs_{i}", label_visibility="collapsed")
-        if _st2(cols[5], f"hi_st_{i}", h): mudou_hi = True
-        if cols[6].button("🗑️", key=f"hi_del_{i}"): to_del_h = i
+        if _st2(cols[4], f"hi_st_{i}", h): mudou_hi = True
+        if cols[5].button("🗑️", key=f"hi_del_{i}"): to_del_h = i
 
     if mudou_hi: salvar(d); st.rerun()
     if to_del_h is not None:
@@ -1168,3 +1162,9 @@ with tab_fin:
         st.markdown(f"<span style='color:#7986cb;font-size:13px;'>Total de processos: "
                     f"<strong style='color:#e8eaf6;'>{len(d['finalizados_sem_honor'])}</strong></span>",
                     unsafe_allow_html=True)
+
+# ── Rodapé / Advogado ─────────────────────────────────────────────────────────
+st.markdown("<br><hr class='divider'>", unsafe_allow_html=True)
+st.markdown("""<div style='text-align:center;color:#5c6bc0;font-size:12px;padding:8px 0;'>
+    ADRIELY NAVES LOVATO – OAB/SP 492.370 &nbsp;|&nbsp; OAB/MG 244.799
+</div>""", unsafe_allow_html=True)
