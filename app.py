@@ -1,8 +1,10 @@
 import streamlit as st
 import json
 import os
+import io
 import streamlit.components.v1 as _components
 from datetime import date as _date
+import pandas as pd
 
 st.set_page_config(page_title="Financeiro – Escritório", page_icon="💼", layout="wide")
 
@@ -156,6 +158,12 @@ def _v(s):
     if ',' in s: s = s.replace('.','').replace(',','.')
     try: return float(s)
     except: return 0.0
+
+def _to_excel(df: pd.DataFrame) -> bytes:
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as w:
+        df.to_excel(w, index=False)
+    return buf.getvalue()
 
 def _fmt(v):
     try: return f"R$ {float(v):,.2f}".replace(",","X").replace(".",",").replace("X",".")
@@ -564,6 +572,20 @@ with tab_ac:
     c2.metric("Recebido", _fmt(pago_ac))
     c3.metric("Pendente", _fmt(pend_ac))
 
+    if d["acordos"]:
+        df_ac = pd.DataFrame([{
+            "Mês": a.get("mes",""), "Data Pagamento": a.get("data_pagamento",""),
+            "Cliente": a.get("cliente",""), "Réu": a.get("reu",""),
+            "Objeto": a.get("objeto",""),
+            "Valor Acordo (R$)": float(a.get("valor_acordo",0)),
+            "Honorários (R$)": float(a.get("honorarios",0)),
+            "Status": a.get("status",""),
+        } for a in d["acordos"]])
+        st.download_button("⬇️ Baixar Excel", data=_to_excel(df_ac),
+            file_name="acordos.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_ac")
+
 # ─────────────────────────────────────────────────────────────────────────────
 # EXECUÇÕES
 # ─────────────────────────────────────────────────────────────────────────────
@@ -633,6 +655,21 @@ with tab_ex:
         if mudou_ex: salvar(d); st.rerun()
         if to_del_e is not None:
             d["execucoes"].pop(to_del_e); salvar(d); st.rerun()
+
+    if d["execucoes"]:
+        st.markdown("<hr class='divider'>", unsafe_allow_html=True)
+        df_ex = pd.DataFrame([{
+            "Mês": e.get("mes",""), "Cliente": e.get("cliente",""),
+            "Réu": e.get("reu",""),
+            "Val. Percebido (R$)": float(e.get("valor_percebido",0)),
+            "Sucumbência (R$)": float(e.get("sucumbencia",0)),
+            "Honorários (R$)": float(e.get("honorarios",0)),
+            "Status": e.get("status",""),
+        } for e in d["execucoes"]])
+        st.download_button("⬇️ Baixar Excel", data=_to_excel(df_ex),
+            file_name="execucoes.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_ex")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HONORÁRIOS INICIAIS
@@ -1162,6 +1199,16 @@ with tab_fin:
         st.markdown(f"<span style='color:#7986cb;font-size:13px;'>Total de processos: "
                     f"<strong style='color:#e8eaf6;'>{len(d['finalizados_sem_honor'])}</strong></span>",
                     unsafe_allow_html=True)
+        df_fin = pd.DataFrame([{
+            "Cliente": p.get("cliente",""), "Réu": p.get("reu",""),
+            "Processo": p.get("processo",""), "Objeto": p.get("objeto",""),
+            "Data Finalização": p.get("data_finalizacao",""),
+            "Motivo": p.get("motivo",""),
+        } for p in d["finalizados_sem_honor"]])
+        st.download_button("⬇️ Baixar Excel", data=_to_excel(df_fin),
+            file_name="finalizados_sem_honorario.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_fin")
 
 # ── Rodapé / Advogado ─────────────────────────────────────────────────────────
 st.markdown("<br><hr class='divider'>", unsafe_allow_html=True)
