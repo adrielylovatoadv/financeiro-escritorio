@@ -93,6 +93,74 @@ _components.html("""
 </script>
 """, height=0)
 
+_components.html("""<script>
+(function(){
+  function setupIcon(){
+    try {
+      var doc = window.parent.document;
+      var c = document.createElement('canvas');
+      c.width = 512; c.height = 512;
+      var ctx = c.getContext('2d');
+
+      // Background gradient (dark navy → indigo)
+      var g = ctx.createLinearGradient(0, 0, 512, 512);
+      g.addColorStop(0, '#1a2a6c');
+      g.addColorStop(1, '#0a0f1e');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Ascending bar chart (3 bars)
+      var bars = [{x:88,h:140},{x:208,h:220},{x:328,h:310}];
+      bars.forEach(function(b, i){
+        var bg = ctx.createLinearGradient(0, 420-b.h, 0, 420);
+        bg.addColorStop(0, i===2 ? '#a5b4fc' : '#ffffff');
+        bg.addColorStop(1, i===2 ? '#6366f1' : 'rgba(255,255,255,0.55)');
+        ctx.fillStyle = bg;
+        ctx.fillRect(b.x, 420-b.h, 76, b.h);
+      });
+
+      // Baseline
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(72, 424, 368, 4);
+
+      // "R$" label bottom-left
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.font = 'bold 52px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('R$', 80, 500);
+
+      var url = c.toDataURL('image/png');
+
+      doc.querySelectorAll('link[rel="apple-touch-icon"]').forEach(function(l){
+        l.parentNode && l.parentNode.removeChild(l);
+      });
+      var lnk = doc.createElement('link');
+      lnk.rel = 'apple-touch-icon';
+      lnk.href = url;
+      doc.head.appendChild(lnk);
+
+      var metas = {
+        'apple-mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-status-bar-style': 'black-translucent',
+        'apple-mobile-web-app-title': 'Financeiro',
+        'theme-color': '#0a0f1e'
+      };
+      Object.keys(metas).forEach(function(n){
+        if (!doc.querySelector('meta[name="'+n+'"]')){
+          var m = doc.createElement('meta');
+          m.name = n; m.content = metas[n];
+          doc.head.appendChild(m);
+        }
+      });
+    } catch(e){}
+  }
+  setupIcon();
+  setTimeout(setupIcon, 800);
+})();
+</script>
+""", height=0)
+
 # ── Persistência ──────────────────────────────────────────────────────────────
 DATA_FILE = os.path.join(os.path.dirname(__file__), "financeiro_data.json")
 
