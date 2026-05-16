@@ -2,9 +2,45 @@ import streamlit as st
 import json
 import os
 import io
+import struct
+import zlib
 import streamlit.components.v1 as _components
 from datetime import date as _date
 import pandas as pd
+
+# ── Gera ícone PNG para a tela de início do iOS ───────────────────────────────
+def _gerar_icone_png():
+    W = H = 180
+    px = bytearray(W * H * 3)
+    for y in range(H):
+        for x in range(W):
+            t = (x + y) / (W + H - 2)
+            r = int(26*(1-t) + 10*t)
+            g = int(42*(1-t) + 15*t)
+            b = int(108*(1-t) + 30*t)
+            i3 = (y*W+x)*3; px[i3]=r; px[i3+1]=g; px[i3+2]=b
+    baseline = H - 22
+    for bx, bw, bh in [(20, 38, 60), (65, 38, 95), (110, 38, 130)]:
+        for y in range(max(0, baseline-bh), baseline):
+            for x in range(bx, min(W, bx+bw)):
+                i3=(y*W+x)*3; px[i3]=230; px[i3+1]=230; px[i3+2]=240
+    for x in range(12, W-12):
+        i3=(baseline*W+x)*3; px[i3]=80; px[i3+1]=100; px[i3+2]=160
+    def ck(tag, data):
+        p = tag+data
+        return struct.pack('>I', len(data))+p+struct.pack('>I', zlib.crc32(p)&0xFFFFFFFF)
+    raw = b''.join(b'\x00'+bytes(px[y*W*3:(y+1)*W*3]) for y in range(H))
+    return (b'\x89PNG\r\n\x1a\n'
+            + ck(b'IHDR', struct.pack('>IIBBBBB', W, H, 8, 2, 0, 0, 0))
+            + ck(b'IDAT', zlib.compress(raw, 6))
+            + ck(b'IEND', b''))
+
+_icon_dir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+_icon_path = os.path.join(_icon_dir, 'icon-financeiro.png')
+os.makedirs(_icon_dir, exist_ok=True)
+if not os.path.exists(_icon_path):
+    with open(_icon_path, 'wb') as _f:
+        _f.write(_gerar_icone_png())
 
 st.set_page_config(page_title="Financeiro – Escritório", page_icon="💼", layout="wide")
 
@@ -93,73 +129,13 @@ _components.html("""
 </script>
 """, height=0)
 
-_components.html("""<script>
-(function(){
-  function setupIcon(){
-    try {
-      var doc = window.parent.document;
-      var c = document.createElement('canvas');
-      c.width = 512; c.height = 512;
-      var ctx = c.getContext('2d');
-
-      // Background gradient (dark navy → indigo)
-      var g = ctx.createLinearGradient(0, 0, 512, 512);
-      g.addColorStop(0, '#1a2a6c');
-      g.addColorStop(1, '#0a0f1e');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 512, 512);
-
-      // Ascending bar chart (3 bars)
-      var bars = [{x:88,h:140},{x:208,h:220},{x:328,h:310}];
-      bars.forEach(function(b, i){
-        var bg = ctx.createLinearGradient(0, 420-b.h, 0, 420);
-        bg.addColorStop(0, i===2 ? '#a5b4fc' : '#ffffff');
-        bg.addColorStop(1, i===2 ? '#6366f1' : 'rgba(255,255,255,0.55)');
-        ctx.fillStyle = bg;
-        ctx.fillRect(b.x, 420-b.h, 76, b.h);
-      });
-
-      // Baseline
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillRect(72, 424, 368, 4);
-
-      // "R$" label bottom-left
-      ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.font = 'bold 52px Arial';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('R$', 80, 500);
-
-      var url = c.toDataURL('image/png');
-
-      doc.querySelectorAll('link[rel="apple-touch-icon"]').forEach(function(l){
-        l.parentNode && l.parentNode.removeChild(l);
-      });
-      var lnk = doc.createElement('link');
-      lnk.rel = 'apple-touch-icon';
-      lnk.href = url;
-      doc.head.appendChild(lnk);
-
-      var metas = {
-        'apple-mobile-web-app-capable': 'yes',
-        'apple-mobile-web-app-status-bar-style': 'black-translucent',
-        'apple-mobile-web-app-title': 'Financeiro',
-        'theme-color': '#0a0f1e'
-      };
-      Object.keys(metas).forEach(function(n){
-        if (!doc.querySelector('meta[name="'+n+'"]')){
-          var m = doc.createElement('meta');
-          m.name = n; m.content = metas[n];
-          doc.head.appendChild(m);
-        }
-      });
-    } catch(e){}
-  }
-  setupIcon();
-  setTimeout(setupIcon, 800);
-})();
-</script>
-""", height=0)
+st.markdown("""
+<link rel="apple-touch-icon" sizes="180x180" href="/app/static/icon-financeiro.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Financeiro">
+<meta name="theme-color" content="#0a0f1e">
+""", unsafe_allow_html=True)
 
 # ── Persistência ──────────────────────────────────────────────────────────────
 DATA_FILE = os.path.join(os.path.dirname(__file__), "financeiro_data.json")

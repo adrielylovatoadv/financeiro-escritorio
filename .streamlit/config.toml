@@ -7,3 +7,4 @@ textColor = "#e8eaf6"
 
 [server]
 headless = true
+staticDirectory = "static"
