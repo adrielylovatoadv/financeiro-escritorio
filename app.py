@@ -1428,57 +1428,51 @@ with tab_bal:
                      f"<span style='color:#c5cae9;font-size:11px;'>{_fmt(v)}</span></div>")
         return rows
 
-    def _var_rows_html_simple(items):
-        if not items: return ""
-        rows = ""
-        for desc, v in items:
-            rows += (f"<div style='display:flex;justify-content:space-between;"
-                     f"padding:3px 0 3px 12px;border-bottom:1px solid #131d3a;'>"
-                     f"<span style='color:#7986cb;font-size:11px;'>{desc}</span>"
-                     f"<span style='color:#c5cae9;font-size:11px;'>{_fmt(v)}</span></div>")
-        return rows
+    S = "style"  # alias para encurtar
 
-    def _reemb_html(val, de_quem):
-        return (f"<div style='display:flex;justify-content:space-between;padding:4px 0;"
-                f"margin-top:4px;border-top:1px solid #2a3f7e;'>"
-                f"<span style='color:#ffa726;font-size:11px;'>💸 A receber de {de_quem}</span>"
-                f"<strong style='color:#ffa726;font-size:11px;'>+ {_fmt(val)}</strong></div>")
+    def _row(label, val, indent=False, nota="", border_top=False):
+        pad = "padding:3px 0 3px 12px" if indent else "padding:4px 0 2px 0"
+        bt  = "border-top:1px solid #2a3f7e;margin-top:4px;" if border_top else ""
+        clr = "#7986cb" if indent else "#9fa8da"
+        nota_html = ""
+        if nota == "pagou tudo":
+            nota_html = "<span style='font-size:9px;color:#ffa726;margin-left:4px;'>(pagou tudo)</span>"
+        elif nota == "a restituir Adriely":
+            nota_html = "<span style='font-size:9px;color:#ef5350;margin-left:4px;'>(a restituir Adriely)</span>"
+        elif nota == "a restituir Eduarda":
+            nota_html = "<span style='font-size:9px;color:#ef5350;margin-left:4px;'>(a restituir Eduarda)</span>"
+        return (f"<div style='display:flex;justify-content:space-between;{pad};{bt}border-bottom:1px solid #131d3a;'>"
+                f"<span style='color:{clr};font-size:11px;'>{label}{nota_html}</span>"
+                f"<span style='color:#c5cae9;font-size:11px;font-weight:600;'>{_fmt(val)}</span></div>")
+
+    def _build_card(titulo, fix_total, fix_items, var_total, var_items, reemb, reemb_de):
+        h = (f"<div class='bloco'><div class='card-titulo'>{titulo}</div>"
+             f"<div style='margin-top:8px;'>")
+        h += _row("Fixas (parte dela)", fix_total)
+        for desc, v, nota in fix_items:
+            h += _row(desc, v, indent=True, nota=nota)
+        h += _row("Variáveis", var_total, border_top=True)
+        for desc, v in var_items:
+            h += _row(desc, v, indent=True)
+        if reemb > 0.005:
+            h += (f"<div style='display:flex;justify-content:space-between;padding:4px 0;"
+                  f"margin-top:6px;border-top:1px solid #2a3f7e;'>"
+                  f"<span style='color:#ffa726;font-size:11px;'>💸 A receber de {reemb_de}</span>"
+                  f"<strong style='color:#ffa726;font-size:11px;'>+ {_fmt(reemb)}</strong></div>")
+        h += "</div></div>"
+        return h
 
     dc1, dc2 = st.columns(2)
     with dc1:
-        st.markdown(f"""<div class="bloco">
-            <div class="card-titulo">Adriely – Detalhamento</div>
-            <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
-                <span style="color:#9fa8da;">Fixas (parte dela)</span>
-                <strong>{_fmt(det_a['Fixas'])}</strong>
-            </div>
-            {_item_rows_html(det_a_fix_items)}
-            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;margin-top:4px;border-top:1px solid #2a3f7e;">
-                <span style="color:#9fa8da;">Variáveis</span>
-                <strong>{_fmt(det_a['Variáveis'])}</strong>
-            </div>
-            {_var_rows_html_simple(det_a_var_items)}
-            {_reemb_html(det_a_reemb, "Eduarda") if det_a_reemb > 0 else ""}
-            </div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(_build_card("ADRIELY – DETALHAMENTO",
+            det_a["Fixas"], det_a_fix_items,
+            det_a["Variáveis"], det_a_var_items,
+            det_a_reemb, "Eduarda"), unsafe_allow_html=True)
     with dc2:
-        st.markdown(f"""<div class="bloco">
-            <div class="card-titulo">Eduarda – Detalhamento</div>
-            <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
-                <span style="color:#9fa8da;">Fixas (parte dela)</span>
-                <strong>{_fmt(det_e['Fixas'])}</strong>
-            </div>
-            {_item_rows_html(det_e_fix_items)}
-            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;margin-top:4px;border-top:1px solid #2a3f7e;">
-                <span style="color:#9fa8da;">Variáveis</span>
-                <strong>{_fmt(det_e['Variáveis'])}</strong>
-            </div>
-            {_var_rows_html_simple(det_e_var_items)}
-            {_reemb_html(det_e_reemb, "Adriely") if det_e_reemb > 0 else ""}
-            </div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(_build_card("EDUARDA – DETALHAMENTO",
+            det_e["Fixas"], det_e_fix_items,
+            det_e["Variáveis"], det_e_var_items,
+            det_e_reemb, "Adriely"), unsafe_allow_html=True)
 
     # Acumulado geral
     st.markdown("<br>", unsafe_allow_html=True)
