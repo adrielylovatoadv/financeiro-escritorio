@@ -1454,11 +1454,6 @@ with tab_bal:
         h += _row("Variáveis", var_total, border_top=True)
         for desc, v in var_items:
             h += _row(desc, v, indent=True)
-        if reemb > 0.005:
-            h += (f"<div style='display:flex;justify-content:space-between;padding:4px 0;"
-                  f"margin-top:6px;border-top:1px solid #2a3f7e;'>"
-                  f"<span style='color:#ffa726;font-size:11px;'>💸 A receber de {reemb_de}</span>"
-                  f"<strong style='color:#ffa726;font-size:11px;'>+ {_fmt(reemb)}</strong></div>")
         h += "</div></div>"
         return h
 
@@ -1467,12 +1462,34 @@ with tab_bal:
         st.markdown(_build_card("ADRIELY – DETALHAMENTO",
             det_a["Fixas"], det_a_fix_items,
             det_a["Variáveis"], det_a_var_items,
-            det_a_reemb, "Eduarda"), unsafe_allow_html=True)
+            0, ""), unsafe_allow_html=True)
     with dc2:
         st.markdown(_build_card("EDUARDA – DETALHAMENTO",
             det_e["Fixas"], det_e_fix_items,
             det_e["Variáveis"], det_e_var_items,
-            det_e_reemb, "Adriely"), unsafe_allow_html=True)
+            0, ""), unsafe_allow_html=True)
+
+    # ── Saldo líquido de reembolso entre as sócias ────────────────────────
+    _net = det_a_reemb - det_e_reemb   # >0 = Eduarda deve Adriely; <0 = Adriely deve Eduarda
+    if abs(_net) > 0.005:
+        _quem_deve   = "Eduarda" if _net > 0 else "Adriely"
+        _quem_recebe = "Adriely" if _net > 0 else "Eduarda"
+        _cor_deve    = "#a5d6a7" if _quem_deve == "Eduarda" else "#9fa8da"
+        _cor_recebe  = "#9fa8da" if _quem_recebe == "Adriely" else "#a5d6a7"
+        st.markdown(
+            f"<div class='bloco' style='border-color:#ffa726;margin-top:8px;'>"
+            f"<span style='font-size:12px;color:#7986cb;'>💸 Reembolso líquido de fixas — </span>"
+            f"<strong style='color:{_cor_deve};'>{_quem_deve}</strong>"
+            f"<span style='color:#e8eaf6;'> deve </span>"
+            f"<strong style='color:#ffa726;font-size:15px;'>{_fmt(abs(_net))}</strong>"
+            f"<span style='color:#e8eaf6;'> para </span>"
+            f"<strong style='color:{_cor_recebe};'>{_quem_recebe}</strong>"
+            f"</div>", unsafe_allow_html=True)
+    elif det_a_reemb > 0.005 or det_e_reemb > 0.005:
+        st.markdown(
+            "<div class='bloco' style='border-color:#4caf50;margin-top:8px;'>"
+            "<span style='color:#4caf50;font-size:12px;'>✅ Reembolsos se compensam — estão quite.</span>"
+            "</div>", unsafe_allow_html=True)
 
     # Acumulado geral
     st.markdown("<br>", unsafe_allow_html=True)
