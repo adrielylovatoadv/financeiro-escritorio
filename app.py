@@ -891,6 +891,15 @@ with tab_fix:
 with tab_var:
     st.markdown("### 🛒 Despesas Variáveis")
 
+    # CSS compacto para esta tabela
+    st.markdown("""<style>
+[data-testid="stHorizontalBlock"]{gap:4px !important;}
+[data-testid="stTextInput"] input{padding:3px 7px !important;font-size:12px !important;}
+[data-baseweb="select"] [role="combobox"]{padding:3px 6px !important;font-size:12px !important;min-height:36px !important;}
+[data-baseweb="select"] [data-baseweb="icon"] svg{width:12px !important;height:12px !important;}
+[data-baseweb="select"] [aria-label="open"],[data-baseweb="select"] button{padding:0 4px !important;width:22px !important;}
+</style>""", unsafe_allow_html=True)
+
     filtro_q = st.selectbox("Filtrar por sócia:", ["Todas","Adriely","Eduarda","dividido"],
                             key="filt_var")
     st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
@@ -954,7 +963,7 @@ with tab_var:
 
     # ── cabeçalho da tabela ────────────────────────────────────────────────────
     # colunas: Descrição | Valor | Parcelas | 1ª→última | Quem | Onde | St | M1 | M2 | M3 | M4 | Del
-    _WCOLS = [1.8, 0.8, 0.85, 1.4, 0.8, 0.9, 0.45, 0.85, 0.85, 0.85, 0.85, 0.35]
+    _WCOLS = [1.7, 0.75, 0.9, 1.0, 0.75, 0.85, 0.42, 0.82, 0.82, 0.82, 0.82, 0.32]
 
     def _hdr_var():
         hdr = st.columns(_WCOLS)
@@ -1010,16 +1019,16 @@ with tab_var:
         _idx_last  = min(_next_idx_v + _nm - 1, len(_ALL_V_COLS) - 1)
         _lbl_first = _V_COL_LABEL.get(_ALL_V_COLS[_idx_first], "")
         _lbl_last  = _V_COL_LABEL.get(_ALL_V_COLS[_idx_last], "")
-        if new_valor > 0:
-            row[3].markdown(
-                f"<div style='padding-top:10px;font-size:11px;color:#9fa8da;'>"
-                f"<b style='color:#e8eaf6;'>{_lbl_first}</b>"
-                f"<span style='color:#5c6bc0;'> → </span>"
-                f"<b style='color:#e8eaf6;'>{_lbl_last}</b></div>",
-                unsafe_allow_html=True)
-        else:
-            row[3].markdown("<div style='padding-top:10px;font-size:11px;color:#3a4060;'>—</div>",
-                            unsafe_allow_html=True)
+        _periodo_html = (
+            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_first}</span>"
+            f"<span style='color:#5c6bc0;'>→</span>"
+            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_last}</span>"
+            if new_valor > 0 else "<span style='color:#3a4060;'>—</span>"
+        )
+        row[3].markdown(
+            f"<div style='padding-top:9px;font-size:11px;display:flex;gap:4px;"
+            f"align-items:center;white-space:nowrap;'>{_periodo_html}</div>",
+            unsafe_allow_html=True)
 
         item["quem"] = row[4].selectbox("", ["Adriely","Eduarda","dividido"],
             index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
