@@ -891,12 +891,8 @@ with tab_fix:
 with tab_var:
     st.markdown("### 🛒 Despesas Variáveis")
 
-    filtro_col1, filtro_col2 = st.columns(2)
-    with filtro_col1:
-        filtro_q = st.selectbox("Filtrar por sócia:", ["Todas","Adriely","Eduarda","dividido"],
-                                key="filt_var")
-    with filtro_col2:
-        filtro_st = st.selectbox("Filtrar por status:", ["Todos","pago","pendente"], key="filt_st")
+    filtro_q = st.selectbox("Filtrar por sócia:", ["Todas","Adriely","Eduarda","dividido"],
+                            key="filt_var")
     st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
 
     col_va, col_vs = st.columns([6,1])
@@ -950,28 +946,11 @@ with tab_var:
 
     NCOLS_M = len(_COLS_MAIN_V)
 
-    # Cabeçalho
-    hdr_v = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
-    for lbl, col in zip(
-        ["Descrição","Val. Total","Parcelas","Quem","Onde","Status"] +
-        [_V_COL_LABEL[c] for c in _COLS_MAIN_V] + ["Total", f"↺{_next_lbl_v}", ""],
-        hdr_v
-    ):
-        col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
-                     unsafe_allow_html=True)
-
-    to_del_v     = None
-    mudou_var    = False
-    totais_v_col = {c: 0.0 for c in _ALL_V_COLS}
-    totais_a_v   = {c: 0.0 for c in _ALL_V_COLS}
-    totais_e_v   = {c: 0.0 for c in _ALL_V_COLS}
-
-    for i, item in enumerate(d["variaveis"]):
-        quem    = item.get("quem","Adriely")
-        st_item = item.get("status","pago")
-        if filtro_q != "Todas" and quem != filtro_q: continue
-        if filtro_st != "Todos" and st_item != filtro_st: continue
-
+    def _render_var_row(i, item):
+        """Renderiza uma linha de despesa variável. Retorna (mudou, del_req)."""
+        quem   = item.get("quem","Adriely")
+        mudou  = False
+        del_req = False
         row = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
         item["descricao"] = row[0].text_input("", value=item.get("descricao",""),
             key=f"vd_{i}", label_visibility="collapsed")
@@ -990,9 +969,8 @@ with tab_var:
             key=f"vq_{i}", label_visibility="collapsed")
         item["onde"] = row[4].text_input("", value=item.get("onde",""),
             key=f"vo_{i}", label_visibility="collapsed")
-        if _st2(row[5], f"vst_{i}", item): mudou_var = True
+        if _st2(row[5], f"vst_{i}", item): mudou = True
 
-        # Inputs dos meses visíveis (atual + próximos 3)
         for j, col in enumerate(_COLS_MAIN_V):
             cur  = item.get("meses",{}).get(col, 0)
             cstr = st.session_state.get(f"vm_{i}_{col}", _vs(cur))
@@ -1003,34 +981,22 @@ with tab_var:
             if "meses" not in item: item["meses"] = {}
             item["meses"][col] = cval
 
-        # Totais (todos os meses, incluindo passados)
-        total_item = 0.0
-        for col in _ALL_V_COLS:
-            cval   = float(item.get("meses",{}).get(col, 0) or 0)
-            total_item       += cval
-            totais_v_col[col] += cval
-            q_now = item.get("quem","Adriely")
-            if q_now == "Adriely":   totais_a_v[col] += cval
-            elif q_now == "Eduarda": totais_e_v[col] += cval
-            else: totais_a_v[col] += cval/2; totais_e_v[col] += cval/2
-
+        total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
         row[-3].markdown(f"<div style='padding-top:8px;font-size:12px;font-weight:600;"
                          f"color:#ffa726;'>{_fmt(total_item)}</div>", unsafe_allow_html=True)
 
-        # Botão de cálculo automático de parcelas (a partir do próximo mês)
         if row[-2].button("↺", key=f"vcalc_{i}"):
-            _auto_parcelas_v(item)
-            salvar(d); st.rerun()
+            _auto_parcelas_v(item); salvar(d); st.rerun()
 
-        if row[-1].button("🗑️", key=f"vdel_{i}"): to_del_v = i
+        if row[-1].button("🗑️", key=f"vdel_{i}"): del_req = True
 
-        # Meses anteriores pagos – minimizados por padrão
+        # Meses anteriores colapsados
         if _COLS_PAST_V:
             _past_vals  = {c: float(item.get("meses",{}).get(c, 0) or 0) for c in _COLS_PAST_V}
             _total_past = sum(_past_vals.values())
             if _total_past > 0:
                 n_past = sum(1 for v in _past_vals.values() if v > 0)
-                with st.expander(f"📂 {n_past} parcela(s) de meses anteriores — {_fmt(_total_past)} já pago(s)"):
+                with st.expander(f"📂 {n_past} parcela(s) anteriores — {_fmt(_total_past)}"):
                     pcols = st.columns(len(_COLS_PAST_V) + 1)
                     for j, col in enumerate(_COLS_PAST_V):
                         vp    = _past_vals[col]
@@ -1044,33 +1010,76 @@ with tab_var:
                         f"<div style='padding-top:8px;'>"
                         f"<span style='font-size:12px;color:#ffa726;font-weight:600;'>{_fmt(_total_past)}</span>"
                         f"</div>", unsafe_allow_html=True)
+        return mudou, del_req, total_item
+
+    def _hdr_var():
+        hdr = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
+        for lbl, col in zip(
+            ["Descrição","Val. Total","Parcelas","Quem","Onde","Status"] +
+            [_V_COL_LABEL[c] for c in _COLS_MAIN_V] + ["Total", f"↺{_next_lbl_v}", ""],
+            hdr
+        ):
+            col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
+                         unsafe_allow_html=True)
+
+    to_del_v  = None
+    mudou_var = False
+    totais_v_col = {c: 0.0 for c in _ALL_V_COLS}
+
+    # ── Seção 1: Em aberto (pendente) ─────────────────────────────────────────
+    pendentes_idx = [i for i, it in enumerate(d["variaveis"])
+                     if it.get("status","pendente") == "pendente"
+                     and (filtro_q == "Todas" or it.get("quem") == filtro_q)]
+
+    if pendentes_idx:
+        st.markdown("<span style='font-size:13px;font-weight:600;color:#ef5350;'>"
+                    "⚠️ Em aberto / parcelas futuras</span>", unsafe_allow_html=True)
+        _hdr_var()
+        for i in pendentes_idx:
+            item = d["variaveis"][i]
+            mudou, del_req, total_item = _render_var_row(i, item)
+            if mudou: mudou_var = True
+            if del_req: to_del_v = i
+            for col in _ALL_V_COLS:
+                totais_v_col[col] += float(item.get("meses",{}).get(col, 0) or 0)
+
+        # Totais dos pendentes
+        tot_v = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
+        tot_v[0].markdown("<strong style='color:#7986cb;font-size:12px;'>TOTAL EM ABERTO</strong>",
+                          unsafe_allow_html=True)
+        for j, col in enumerate(_COLS_MAIN_V):
+            tot_v[6+j].markdown(f"<strong style='color:#ffa726;font-size:11px;'>"
+                                 f"{_fmt(totais_v_col[col])}</strong>", unsafe_allow_html=True)
+    else:
+        st.markdown("""<div class="bloco" style="text-align:center;padding:20px;">
+            <span style="color:#4caf50;font-size:14px;">Nenhuma despesa variável em aberto.</span>
+        </div>""", unsafe_allow_html=True)
+
+    # ── Seção 2: Totalmente pagas (conferência) ────────────────────────────────
+    pagas_idx = [i for i, it in enumerate(d["variaveis"])
+                 if it.get("status","pendente") == "pago"
+                 and (filtro_q == "Todas" or it.get("quem") == filtro_q)]
+
+    if pagas_idx:
+        total_pagas_geral = sum(
+            sum(float(d["variaveis"][i].get("meses",{}).get(c,0) or 0) for c in _ALL_V_COLS)
+            for i in pagas_idx
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander(f"✅ {len(pagas_idx)} despesa(s) totalmente paga(s) — "
+                         f"{_fmt(total_pagas_geral)} · clique para conferência"):
+            _hdr_var()
+            for i in pagas_idx:
+                item = d["variaveis"][i]
+                mudou, del_req, total_item = _render_var_row(i, item)
+                if mudou: mudou_var = True
+                if del_req: to_del_v = i
+                for col in _ALL_V_COLS:
+                    totais_v_col[col] += float(item.get("meses",{}).get(col, 0) or 0)
 
     if mudou_var: salvar(d); st.rerun()
     if to_del_v is not None:
         d["variaveis"].pop(to_del_v); salvar(d); st.rerun()
-
-    # Linha de totais
-    tot_v = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
-    tot_v[0].markdown("<strong style='color:#7986cb;'>TOTAL</strong>", unsafe_allow_html=True)
-    for j, col in enumerate(_COLS_MAIN_V):
-        tot_v[6+j].markdown(f"<strong style='color:#ffa726;font-size:11px;'>"
-                             f"{_fmt(totais_v_col[col])}</strong>", unsafe_allow_html=True)
-
-    # Pendentes por sócia
-    st.markdown("<br>", unsafe_allow_html=True)
-    pendentes_var = [item for item in d["variaveis"] if item.get("status")=="pendente"]
-    if pendentes_var:
-        st.markdown("#### ⚠️ Despesas Pendentes")
-        for item in pendentes_var:
-            quem = item.get("quem","")
-            badge = "badge-adriely" if quem=="Adriely" else ("badge-eduarda" if quem=="Eduarda" else "")
-            st.markdown(f"""<div class="bloco" style="border-color:#b71c1c;padding:10px 16px;">
-                <span class="{badge}">{quem}</span>&nbsp;
-                <strong>{item.get('descricao','')}</strong>&nbsp;
-                <span style="color:#7986cb">{item.get('parcelas','')}</span>&nbsp;|&nbsp;
-                Valor total: {_fmt(item.get('valor',0))}&nbsp;|&nbsp;
-                {item.get('onde','')}
-            </div>""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BALANÇO DAS SÓCIAS
