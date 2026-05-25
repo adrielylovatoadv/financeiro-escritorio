@@ -408,7 +408,27 @@ if "dados" not in st.session_state:
 d = st.session_state.dados
 
 # ── Cabeçalho ─────────────────────────────────────────────────────────────────
-st.markdown("""
+import base64 as _b64_fin
+import os as _os_fin
+_logo_path_fin = _os_fin.path.join(_os_fin.path.dirname(__file__), "logo.png")
+if _os_fin.path.exists(_logo_path_fin):
+    with open(_logo_path_fin, "rb") as _lf_fin:
+        _logo_b64_fin = _b64_fin.b64encode(_lf_fin.read()).decode()
+    st.markdown(f"""
+<div style='display:flex;align-items:center;gap:16px;
+    background:linear-gradient(135deg,#0d1b3e 0%,#1a2a5e 100%);
+    border:1px solid #2a3f7e;border-radius:12px;padding:20px 28px;margin-bottom:16px;'>
+  <img src='data:image/png;base64,{_logo_b64_fin}' style='width:68px;border-radius:8px;
+       box-shadow:0 2px 10px rgba(0,0,0,0.4);flex-shrink:0;'>
+  <div>
+    <div style='font-size:9px;letter-spacing:3px;color:#7986cb;font-weight:600;'>LOVATO &amp; ESTEVÃO · ADVOCACIA</div>
+    <h1 style='font-size:22px;font-weight:700;margin:4px 0 2px 0;color:#e8eaf6;'>💼 CONTROLE FINANCEIRO</h1>
+    <p style='color:#5c6bc0;font-size:13px;margin:0;'>Sócias: Adriely &amp; Eduarda</p>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+else:
+    st.markdown("""
 <div style='text-align:center;padding:20px 0 6px 0'>
   <h1 style='font-size:26px;font-weight:700;margin:0;
       background:linear-gradient(90deg,#5c6bc0,#42a5f5);
