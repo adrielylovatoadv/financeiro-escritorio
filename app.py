@@ -1038,6 +1038,15 @@ with tab_var:
         new_dc = _picked.strftime("%d/%m/%Y") if _picked else ""
         item["data_compra"] = new_dc
         _start_col = _calc_start_col_v(new_dc)
+        if _start_col and new_valor > 0:
+            _nm_p = int(_re.match(r'(\d+)', new_parc).group(1)) if _re.match(r'(\d+)', new_parc) else 1
+            _si = _ALL_V_COLS.index(_start_col)
+            _ei = min(_si + _nm_p - 1, len(_ALL_V_COLS) - 1)
+            _ls = _V_COL_LABEL.get(_ALL_V_COLS[_si], "")
+            _le = _V_COL_LABEL.get(_ALL_V_COLS[_ei], "")
+            row[3].markdown(
+                f"<div style='font-size:10px;color:#7986cb;margin-top:-10px;'>"
+                f"{_ls} → {_le}</div>", unsafe_allow_html=True)
 
         # Auto-calcular: quando parcelas/valor/data_compra muda (só se data válida)
         _pp_key, _pv_key, _pdc_key = f"_pp_{i}", f"_pv_{i}", f"_pdc_{i}"
