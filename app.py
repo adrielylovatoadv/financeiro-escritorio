@@ -1253,6 +1253,10 @@ with tab_bal:
         if h.get("status") == "pago" and _mes_ref in str(h.get("data_pagamento", ""))
     )
 
+    # Colunas de meses futuros (após o mês atual) — itens "pago" são excluídos só nelas
+    _future_cols = {col for (yr, mo), col in _m2c_b.items()
+                    if (yr, mo) > (_hj_b.year, _hj_b.month)}
+
     # gastos do mês por sócia
     def gastos_mes(col):
         a_g, e_g = 0.0, 0.0
@@ -1263,7 +1267,8 @@ with tab_bal:
             elif quem == "Eduarda": e_g += val
             else: a_g += val/2; e_g += val/2
         for item in d["variaveis"]:
-            if item.get("status") == "pago": continue  # já quitado, não conta no balanço
+            # em meses futuros, ignorar itens já quitados
+            if col in _future_cols and item.get("status") == "pago": continue
             val = float(item.get("meses",{}).get(col,0) or 0)
             quem = item.get("quem","")
             if quem == "Adriely": a_g += val
@@ -1317,7 +1322,7 @@ with tab_bal:
         elif quem=="Eduarda": det_e["Fixas"]+=val
         else: det_a["Fixas"]+=val/2; det_e["Fixas"]+=val/2
     for item in d["variaveis"]:
-        if item.get("status") == "pago": continue  # já quitado, não exibe no detalhamento
+        if mes_sel in _future_cols and item.get("status") == "pago": continue
         val = float(item.get("meses",{}).get(mes_sel,0) or 0)
         if val <= 0: continue
         quem = item.get("quem","")
