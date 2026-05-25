@@ -843,32 +843,43 @@ with tab_fix:
 
     # ── Status de pagamento por sócia ──────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### Status de Pagamento por Sócia (mês atual)")
-    st.caption("Marque abaixo se cada sócia já pagou sua parte nas despesas fixas deste mês.")
+    st.markdown("#### Status de Pagamento por Sócia")
+    st.caption("Selecione o mês, marque se cada sócia pagou e registre quem quitou a conta — o resumo de reembolso aparece abaixo.")
 
     _hj = _date.today()
     _m2c = {(2025,10):"Out",(2025,11):"Nov",(2025,12):"Dez",
             (2026,1):"Jan",(2026,2):"Fev",(2026,3):"Mar",(2026,4):"Abr",(2026,5):"Mai",
             (2026,6):"Jun",(2026,7):"Jul",(2026,8):"Ago",(2026,9):"Set",
             (2026,10):"Out2",(2026,11):"Nov2",(2026,12):"Dez2"}
-    mes_atual_col = _m2c.get((_hj.year, _hj.month), "Mai")
-    col_status = st.columns([3, 2, 2])
-    col_status[0].markdown("<span style='font-size:11px;color:#7986cb;font-weight:600;'>Categoria</span>",
-                           unsafe_allow_html=True)
-    col_status[1].markdown("<span style='font-size:11px;color:#9fa8da;font-weight:600;'>Adriely</span>",
-                           unsafe_allow_html=True)
-    col_status[2].markdown("<span style='font-size:11px;color:#a5d6a7;font-weight:600;'>Eduarda</span>",
-                           unsafe_allow_html=True)
+    _cols_fix_disp = [c for c in COLS_VIS]   # meses exibidos na tabela de fixas
+    _col_lbl_fix   = {c: col_lbl[c] for c in _cols_fix_disp}
+    _default_fix   = _m2c.get((_hj.year, _hj.month), "Mai")
+    if _default_fix not in _cols_fix_disp: _default_fix = _cols_fix_disp[-1]
+    mes_atual_col  = st.radio("Mês:", _cols_fix_disp, horizontal=True,
+                              format_func=lambda x: _col_lbl_fix.get(x, x),
+                              index=_cols_fix_disp.index(_default_fix),
+                              key="fix_st_mes")
 
+    # cabeçalho
+    _hst = st.columns([2.5, 0.7, 0.7, 1.8])
+    for _lbl, _col in zip(["Categoria","Adriely","Eduarda","Quem pagou a conta"], _hst):
+        _col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{_lbl}</span>",
+                      unsafe_allow_html=True)
     st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
+
     mudou_fix_st = False
+    _QUEM_PAGOU_OPTS = ["dividido", "Adriely pagou tudo", "Eduarda pagou tudo"]
+    _reembolsos = []   # [(quem_deve, quem_recebe, valor, cat)]
+
     for cat in d["fixas"]:
         val = d["fixas"][cat].get(mes_atual_col, 0)
         if val <= 0: continue
-        cols_s = st.columns([3, 1, 1])
-        cols_s[0].markdown(f"<div style='padding-top:8px;'>{cat} — {_fmt(val/2)} cada</div>",
+        cols_s = st.columns([2.5, 0.7, 0.7, 1.8])
+        cols_s[0].markdown(f"<div style='padding-top:8px;font-size:13px;'>{cat}"
+                           f"<span style='color:#5c6bc0;font-size:11px;'> — {_fmt(val/2)} cada</span></div>",
                            unsafe_allow_html=True)
         if cat not in d["fixas_status"]: d["fixas_status"][cat] = {}
+
         # Adriely
         fa = {"status": d["fixas_status"][cat].get(f"{mes_atual_col}_adriely","pendente")}
         if _st2(cols_s[1], f"fxst_a_{cat}", fa):
@@ -876,6 +887,7 @@ with tab_fix:
             mudou_fix_st = True
         else:
             d["fixas_status"][cat][f"{mes_atual_col}_adriely"] = fa["status"]
+
         # Eduarda
         fe = {"status": d["fixas_status"][cat].get(f"{mes_atual_col}_eduarda","pendente")}
         if _st2(cols_s[2], f"fxst_e_{cat}", fe):
@@ -883,7 +895,50 @@ with tab_fix:
             mudou_fix_st = True
         else:
             d["fixas_status"][cat][f"{mes_atual_col}_eduarda"] = fe["status"]
+
+        # Quem pagou a conta inteira
+        _qp_key  = f"{mes_atual_col}_quem_pagou"
+        _qp_cur  = d["fixas_status"][cat].get(_qp_key, "dividido")
+        if _qp_cur not in _QUEM_PAGOU_OPTS: _qp_cur = "dividido"
+        _qp_new  = cols_s[3].selectbox("", _QUEM_PAGOU_OPTS,
+                       index=_QUEM_PAGOU_OPTS.index(_qp_cur),
+                       key=f"fxqp_{cat}_{mes_atual_col}", label_visibility="collapsed")
+        if _qp_new != _qp_cur:
+            d["fixas_status"][cat][_qp_key] = _qp_new
+            mudou_fix_st = True
+        else:
+            d["fixas_status"][cat][_qp_key] = _qp_new
+
+        # Acumula reembolsos
+        if _qp_new == "Adriely pagou tudo":
+            _reembolsos.append(("Eduarda", "Adriely", val/2, cat))
+        elif _qp_new == "Eduarda pagou tudo":
+            _reembolsos.append(("Adriely", "Eduarda", val/2, cat))
+
     if mudou_fix_st: salvar(d); st.rerun()
+
+    # ── Resumo de reembolso ────────────────────────────────────────────────
+    if _reembolsos:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("##### 💸 Resumo de Reembolso")
+        _deve_a = sum(v for quem, _, v, _ in _reembolsos if quem == "Adriely")
+        _deve_e = sum(v for quem, _, v, _ in _reembolsos if quem == "Eduarda")
+        if _deve_e > 0:
+            itens_e = ", ".join(c for q, _, _, c in _reembolsos if q == "Eduarda")
+            st.markdown(f"""<div class="bloco" style="border-color:#ffa726;">
+                💰 <strong style="color:#ffa726;">Eduarda</strong> deve
+                <strong style="color:#e8eaf6;">{_fmt(_deve_e)}</strong> para
+                <strong style="color:#9fa8da;">Adriely</strong>
+                <span style="color:#5c6bc0;font-size:11px;"> ({itens_e})</span>
+            </div>""", unsafe_allow_html=True)
+        if _deve_a > 0:
+            itens_a = ", ".join(c for q, _, _, c in _reembolsos if q == "Adriely")
+            st.markdown(f"""<div class="bloco" style="border-color:#ffa726;">
+                💰 <strong style="color:#ffa726;">Adriely</strong> deve
+                <strong style="color:#e8eaf6;">{_fmt(_deve_a)}</strong> para
+                <strong style="color:#a5d6a7;">Eduarda</strong>
+                <span style="color:#5c6bc0;font-size:11px;"> ({itens_a})</span>
+            </div>""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DESPESAS VARIÁVEIS
