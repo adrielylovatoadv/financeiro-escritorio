@@ -953,19 +953,21 @@ with tab_var:
                 item["meses"][_ALL_V_COLS[idx]] = monthly
 
     # ── cabeçalho da tabela ────────────────────────────────────────────────────
-    # colunas: Descrição | Valor | Parcelas | Quem | Onde | St | M1 | M2 | M3 | Del
-    _WCOLS = [1.8, 0.8, 0.75, 0.8, 0.95, 0.45, 0.85, 0.85, 0.85, 0.85, 0.35]
+    # colunas: Descrição | Valor | Parcelas | 1ª→última | Quem | Onde | St | M1 | M2 | M3 | M4 | Del
+    _WCOLS = [1.8, 0.8, 0.85, 1.4, 0.8, 0.9, 0.45, 0.85, 0.85, 0.85, 0.85, 0.35]
 
     def _hdr_var():
         hdr = st.columns(_WCOLS)
         lbl_n3 = [_V_COL_LABEL.get(c, c) for c in _N3]
-        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Quem","Onde","St"] + lbl_n3 + [""]):
+        for col, lbl in zip(hdr,
+            ["Descrição","Valor","Parcelas","Período","Quem","Onde","St"] + lbl_n3 + [""]):
             col.markdown(
                 f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
                 f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
                 unsafe_allow_html=True)
 
     def _render_var_row(i, item):
+        import re as _re
         quem    = item.get("quem","Adriely")
         mudou   = False
         del_req = False
@@ -986,13 +988,6 @@ with tab_var:
             index=PARCELAS_OPTS.index(parc_str),
             key=f"vp_{i}", label_visibility="collapsed")
 
-        item["quem"] = row[3].selectbox("", ["Adriely","Eduarda","dividido"],
-            index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
-            key=f"vq_{i}", label_visibility="collapsed")
-        item["onde"] = row[4].text_input("", value=item.get("onde",""),
-            placeholder="Onde", key=f"vo_{i}", label_visibility="collapsed")
-        if _st2(row[5], f"vst_{i}", item): mudou = True
-
         # Auto-calcular: (a) quando parcelas/valor muda; (b) primeiro render com meses futuros vazios
         _pp_key, _pv_key = f"_pp_{i}", f"_pv_{i}"
         _primeiro_render  = _pp_key not in st.session_state
@@ -1009,18 +1004,42 @@ with tab_var:
         st.session_state[_pp_key] = new_parc
         st.session_state[_pv_key] = new_valor
 
-        # Próximos 3 meses — editáveis (preenchidos pelo auto-calc)
+        # Período: 1ª parcela → última parcela
+        _nm = int(_re.match(r'(\d+)', new_parc).group(1)) if _re.match(r'(\d+)', new_parc) else 1
+        _idx_first = _next_idx_v
+        _idx_last  = min(_next_idx_v + _nm - 1, len(_ALL_V_COLS) - 1)
+        _lbl_first = _V_COL_LABEL.get(_ALL_V_COLS[_idx_first], "")
+        _lbl_last  = _V_COL_LABEL.get(_ALL_V_COLS[_idx_last], "")
+        if new_valor > 0:
+            row[3].markdown(
+                f"<div style='padding-top:10px;font-size:11px;color:#9fa8da;'>"
+                f"<b style='color:#e8eaf6;'>{_lbl_first}</b>"
+                f"<span style='color:#5c6bc0;'> → </span>"
+                f"<b style='color:#e8eaf6;'>{_lbl_last}</b></div>",
+                unsafe_allow_html=True)
+        else:
+            row[3].markdown("<div style='padding-top:10px;font-size:11px;color:#3a4060;'>—</div>",
+                            unsafe_allow_html=True)
+
+        item["quem"] = row[4].selectbox("", ["Adriely","Eduarda","dividido"],
+            index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
+            key=f"vq_{i}", label_visibility="collapsed")
+        item["onde"] = row[5].text_input("", value=item.get("onde",""),
+            placeholder="Onde", key=f"vo_{i}", label_visibility="collapsed")
+        if _st2(row[6], f"vst_{i}", item): mudou = True
+
+        # 4 meses (atual + próximos 3) — editáveis
         for j, mc in enumerate(_N3):
             cur  = item.get("meses",{}).get(mc, 0)
             cstr = st.session_state.get(f"vm_{i}_{mc}", _vs(cur))
-            cstr_new = row[6+j].text_input("", value=cstr, placeholder="0,00",
+            cstr_new = row[7+j].text_input("", value=cstr, placeholder="0,00",
                 key=f"vm_{i}_{mc}", label_visibility="collapsed")
             try: cval = float(cstr_new.replace(".","").replace(",",".")) if cstr_new else 0.0
             except: cval = 0.0
             if "meses" not in item: item["meses"] = {}
             item["meses"][mc] = cval
 
-        if row[10].button("🗑️", key=f"vdel_{i}"): del_req = True
+        if row[11].button("🗑️", key=f"vdel_{i}"): del_req = True
 
         total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
         return mudou, del_req, total_item
@@ -1054,7 +1073,7 @@ with tab_var:
                         unsafe_allow_html=True)
         for j, mc in enumerate(_N3):
             v = totais_v_col[mc]
-            tot[6+j].markdown(
+            tot[7+j].markdown(
                 f"<div style='font-size:11px;font-weight:700;color:#ffa726;text-align:center;"
                 f"padding-top:6px;border-top:1px solid #2a3f7e;'>{_fmt(v) if v else '—'}</div>",
                 unsafe_allow_html=True)
