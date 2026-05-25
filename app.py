@@ -1368,14 +1368,38 @@ with tab_bal:
     st.markdown("#### Gastos do mês por categoria")
     det_a = {"Fixas":0.0, "Variáveis":0.0}
     det_e = {"Fixas":0.0, "Variáveis":0.0}
-    det_a_var_items = []   # [(descricao, valor_parcela)]
+    det_a_fix_items = []   # [(desc, val_resp, nota)]
+    det_e_fix_items = []
+    det_a_reemb = 0.0      # Adriely a receber (pagou tudo por Eduarda)
+    det_e_reemb = 0.0      # Eduarda a receber (pagou tudo por Adriely)
+    det_a_var_items = []
     det_e_var_items = []
+
     for cat, meses in d["fixas"].items():
         val = float(meses.get(mes_sel,0) or 0)
+        if val <= 0: continue
         quem = d["fixas_quem"].get(cat,"dividido")
-        if quem=="Adriely": det_a["Fixas"]+=val
-        elif quem=="Eduarda": det_e["Fixas"]+=val
-        else: det_a["Fixas"]+=val/2; det_e["Fixas"]+=val/2
+        qp   = d["fixas_status"].get(cat, {}).get(f"{mes_sel}_quem_pagou", "dividido")
+        if quem == "Adriely":
+            det_a["Fixas"] += val
+            det_a_fix_items.append((cat, val, ""))
+        elif quem == "Eduarda":
+            det_e["Fixas"] += val
+            det_e_fix_items.append((cat, val, ""))
+        else:
+            det_a["Fixas"] += val/2; det_e["Fixas"] += val/2
+            if qp == "Adriely pagou tudo":
+                det_a_fix_items.append((cat, val/2, "pagou tudo"))
+                det_e_fix_items.append((cat, val/2, "a restituir Adriely"))
+                det_a_reemb += val/2
+            elif qp == "Eduarda pagou tudo":
+                det_e_fix_items.append((cat, val/2, "pagou tudo"))
+                det_a_fix_items.append((cat, val/2, "a restituir Eduarda"))
+                det_e_reemb += val/2
+            else:
+                det_a_fix_items.append((cat, val/2, ""))
+                det_e_fix_items.append((cat, val/2, ""))
+
     for item in d["variaveis"]:
         if mes_sel in _future_cols and item.get("status") == "pago": continue
         val = float(item.get("meses",{}).get(mes_sel,0) or 0)
@@ -1383,17 +1407,28 @@ with tab_bal:
         quem = item.get("quem","")
         desc = item.get("descricao","—")
         if quem=="Adriely":
-            det_a["Variáveis"]+=val
-            det_a_var_items.append((desc, val))
+            det_a["Variáveis"]+=val; det_a_var_items.append((desc, val))
         elif quem=="Eduarda":
-            det_e["Variáveis"]+=val
-            det_e_var_items.append((desc, val))
+            det_e["Variáveis"]+=val; det_e_var_items.append((desc, val))
         else:
             det_a["Variáveis"]+=val/2; det_e["Variáveis"]+=val/2
             det_a_var_items.append((desc, val/2))
             det_e_var_items.append((desc, val/2))
 
-    def _var_rows_html(items):
+    def _item_rows_html(items):
+        if not items: return ""
+        rows = ""
+        for desc, v, nota in items:
+            _cor_nota = "#ffa726" if "pagou tudo" in nota else "#ef5350" if "restituir" in nota else ""
+            _nota_html = (f"<span style='font-size:9px;color:{_cor_nota};margin-left:4px;'>"
+                          f"({nota})</span>") if nota else ""
+            rows += (f"<div style='display:flex;justify-content:space-between;"
+                     f"padding:3px 0 3px 12px;border-bottom:1px solid #131d3a;'>"
+                     f"<span style='color:#7986cb;font-size:11px;'>{desc}{_nota_html}</span>"
+                     f"<span style='color:#c5cae9;font-size:11px;'>{_fmt(v)}</span></div>")
+        return rows
+
+    def _var_rows_html_simple(items):
         if not items: return ""
         rows = ""
         for desc, v in items:
@@ -1403,35 +1438,45 @@ with tab_bal:
                      f"<span style='color:#c5cae9;font-size:11px;'>{_fmt(v)}</span></div>")
         return rows
 
+    def _reemb_html(val, de_quem):
+        return (f"<div style='display:flex;justify-content:space-between;padding:4px 0;"
+                f"margin-top:4px;border-top:1px solid #2a3f7e;'>"
+                f"<span style='color:#ffa726;font-size:11px;'>💸 A receber de {de_quem}</span>"
+                f"<strong style='color:#ffa726;font-size:11px;'>+ {_fmt(val)}</strong></div>")
+
     dc1, dc2 = st.columns(2)
     with dc1:
         st.markdown(f"""<div class="bloco">
             <div class="card-titulo">Adriely – Detalhamento</div>
             <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #2a3f7e;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
                 <span style="color:#9fa8da;">Fixas (parte dela)</span>
                 <strong>{_fmt(det_a['Fixas'])}</strong>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
+            {_item_rows_html(det_a_fix_items)}
+            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;margin-top:4px;border-top:1px solid #2a3f7e;">
                 <span style="color:#9fa8da;">Variáveis</span>
                 <strong>{_fmt(det_a['Variáveis'])}</strong>
             </div>
-            {_var_rows_html(det_a_var_items)}
+            {_var_rows_html_simple(det_a_var_items)}
+            {_reemb_html(det_a_reemb, "Eduarda") if det_a_reemb > 0 else ""}
             </div>
         </div>""", unsafe_allow_html=True)
     with dc2:
         st.markdown(f"""<div class="bloco">
             <div class="card-titulo">Eduarda – Detalhamento</div>
             <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #2a3f7e;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
                 <span style="color:#9fa8da;">Fixas (parte dela)</span>
                 <strong>{_fmt(det_e['Fixas'])}</strong>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
+            {_item_rows_html(det_e_fix_items)}
+            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;margin-top:4px;border-top:1px solid #2a3f7e;">
                 <span style="color:#9fa8da;">Variáveis</span>
                 <strong>{_fmt(det_e['Variáveis'])}</strong>
             </div>
-            {_var_rows_html(det_e_var_items)}
+            {_var_rows_html_simple(det_e_var_items)}
+            {_reemb_html(det_e_reemb, "Adriely") if det_e_reemb > 0 else ""}
             </div>
         </div>""", unsafe_allow_html=True)
 
