@@ -1263,6 +1263,7 @@ with tab_bal:
             elif quem == "Eduarda": e_g += val
             else: a_g += val/2; e_g += val/2
         for item in d["variaveis"]:
+            if item.get("status") == "pago": continue  # já quitado, não conta no balanço
             val = float(item.get("meses",{}).get(col,0) or 0)
             quem = item.get("quem","")
             if quem == "Adriely": a_g += val
@@ -1316,6 +1317,7 @@ with tab_bal:
         elif quem=="Eduarda": det_e["Fixas"]+=val
         else: det_a["Fixas"]+=val/2; det_e["Fixas"]+=val/2
     for item in d["variaveis"]:
+        if item.get("status") == "pago": continue  # já quitado, não exibe no detalhamento
         val = float(item.get("meses",{}).get(mes_sel,0) or 0)
         if val <= 0: continue
         quem = item.get("quem","")
