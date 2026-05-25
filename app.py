@@ -954,7 +954,7 @@ with tab_var:
 
     # ── cabeçalho da tabela ────────────────────────────────────────────────────
     # colunas: Descrição | Valor | Parcelas | Quem | Onde | St | M1 | M2 | M3 | Del
-    _WCOLS = [2.4, 0.95, 0.75, 0.85, 1.0, 0.45, 0.85, 0.85, 0.85, 0.35]
+    _WCOLS = [1.8, 0.8, 0.75, 0.8, 0.95, 0.45, 0.85, 0.85, 0.85, 0.35]
 
     def _hdr_var():
         hdr = st.columns(_WCOLS)
@@ -993,26 +993,32 @@ with tab_var:
             placeholder="Onde", key=f"vo_{i}", label_visibility="collapsed")
         if _st2(row[5], f"vst_{i}", item): mudou = True
 
-        # Auto-calcular quando valor ou parcelas muda
+        # Auto-calcular: (a) quando parcelas/valor muda; (b) primeiro render com meses futuros vazios
         _pp_key, _pv_key = f"_pp_{i}", f"_pv_{i}"
+        _primeiro_render  = _pp_key not in st.session_state
         prev_parc = st.session_state.get(_pp_key, new_parc)
         prev_val  = st.session_state.get(_pv_key, new_valor)
-        if (new_parc != prev_parc or new_valor != prev_val) and new_valor > 0:
-            item["valor"] = new_valor; item["parcelas"] = new_parc
+        _fut_vazio = all(not item.get("meses",{}).get(c) for c in _ALL_V_COLS[_next_idx_v:])
+        _deve_calc = new_valor > 0 and (
+            (new_parc != prev_parc or new_valor != prev_val) or
+            (_primeiro_render and _fut_vazio)
+        )
+        item["valor"] = new_valor; item["parcelas"] = new_parc
+        if _deve_calc:
             _auto_parcelas_v(item); mudou = True
-        else:
-            item["valor"] = new_valor; item["parcelas"] = new_parc
         st.session_state[_pp_key] = new_parc
         st.session_state[_pv_key] = new_valor
 
-        # Próximos 3 meses — valores calculados (só leitura)
+        # Próximos 3 meses — editáveis (preenchidos pelo auto-calc)
         for j, mc in enumerate(_N3):
-            val = float(item.get("meses",{}).get(mc, 0) or 0)
-            row[6+j].markdown(
-                f"<div style='padding-top:8px;font-size:12px;text-align:center;"
-                f"color:{'#e8eaf6' if val > 0 else '#3a4060'};'>"
-                f"{'<b>'+_fmt(val)+'</b>' if val > 0 else '—'}</div>",
-                unsafe_allow_html=True)
+            cur  = item.get("meses",{}).get(mc, 0)
+            cstr = st.session_state.get(f"vm_{i}_{mc}", _vs(cur))
+            cstr_new = row[6+j].text_input("", value=cstr, placeholder="0,00",
+                key=f"vm_{i}_{mc}", label_visibility="collapsed")
+            try: cval = float(cstr_new.replace(".","").replace(",",".")) if cstr_new else 0.0
+            except: cval = 0.0
+            if "meses" not in item: item["meses"] = {}
+            item["meses"][mc] = cval
 
         if row[9].button("🗑️", key=f"vdel_{i}"): del_req = True
 
