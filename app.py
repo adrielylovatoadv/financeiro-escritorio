@@ -944,6 +944,24 @@ with tab_var:
         (2027,6):"Jun27",(2027,7):"Jul27",(2027,8):"Ago27",(2027,9):"Set27",
         (2027,10):"Out27",(2027,11):"Nov27",(2027,12):"Dez27",
     }
+    def _calc_start_col_v(dc_str):
+        """Retorna a chave de _ALL_V_COLS para início da cobrança conforme data da compra.
+        Dia <= 10: mesmo mês. Dia > 10: mês seguinte."""
+        if not dc_str or len(dc_str) < 8:
+            return None
+        try:
+            parts = dc_str.strip().split("/")
+            if len(parts) != 3:
+                return None
+            day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+            if day <= 10:
+                sm, sy = month, year
+            else:
+                sm, sy = (1, year + 1) if month == 12 else (month + 1, year)
+            return _ym2col_v.get((sy, sm))
+        except:
+            return None
+
     _hj_v       = _date.today()
     _cur_col_v  = _ym2col_v.get((_hj_v.year, _hj_v.month), "Mai")
     _cur_idx_v  = _ALL_V_COLS.index(_cur_col_v) if _cur_col_v in _ALL_V_COLS else 7
@@ -953,7 +971,7 @@ with tab_var:
 
     PARCELAS_OPTS = [f"{n}x" for n in range(1, 21)]
 
-    def _auto_parcelas_v(item):
+    def _auto_parcelas_v(item, start_col=None):
         import re
         m = re.match(r'(\d+)', str(item.get("parcelas","1")))
         n = int(m.group(1)) if m else 1
@@ -961,10 +979,11 @@ with tab_var:
         if n <= 0 or total <= 0: return
         monthly = round(total / n, 2)
         if "meses" not in item: item["meses"] = {}
-        for c in _ALL_V_COLS[_next_idx_v:]:
+        s_idx = _ALL_V_COLS.index(start_col) if (start_col and start_col in _ALL_V_COLS) else _next_idx_v
+        for c in _ALL_V_COLS:
             item["meses"][c] = 0
         for j in range(n):
-            idx = _next_idx_v + j
+            idx = s_idx + j
             if idx < len(_ALL_V_COLS):
                 item["meses"][_ALL_V_COLS[idx]] = monthly
 
@@ -978,7 +997,7 @@ with tab_var:
         hdr = st.columns(_WCOLS)
         lbl_n3 = [_V_COL_LABEL.get(c, c) for c in _N3]
         for col, lbl in zip(hdr,
-            ["Descrição","Valor","Parcelas","Período","Quem","Onde","St"] + lbl_n3 + [""]):
+            ["Descrição","Valor","Parcelas","Data Compra","Quem","Onde","St"] + lbl_n3 + [""]):
             col.markdown(
                 f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
                 f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
@@ -1006,38 +1025,29 @@ with tab_var:
             index=PARCELAS_OPTS.index(parc_str),
             key=f"vp_{i}", label_visibility="collapsed")
 
-        # Auto-calcular: (a) quando parcelas/valor muda; (b) primeiro render com meses futuros vazios
-        _pp_key, _pv_key = f"_pp_{i}", f"_pv_{i}"
+        # Data da compra — determina início da cobrança (≤10: mesmo mês; >10: próximo mês)
+        new_dc = row[3].text_input("", value=item.get("data_compra",""),
+            placeholder="DD/MM/AAAA", key=f"vdc_{i}", label_visibility="collapsed")
+        item["data_compra"] = new_dc
+        _start_col = _calc_start_col_v(new_dc)
+
+        # Auto-calcular: quando parcelas/valor/data_compra muda (só se data válida)
+        _pp_key, _pv_key, _pdc_key = f"_pp_{i}", f"_pv_{i}", f"_pdc_{i}"
         _primeiro_render  = _pp_key not in st.session_state
         prev_parc = st.session_state.get(_pp_key, new_parc)
         prev_val  = st.session_state.get(_pv_key, new_valor)
+        prev_dc   = st.session_state.get(_pdc_key, new_dc)
         _fut_vazio = all(not item.get("meses",{}).get(c) for c in _ALL_V_COLS[_next_idx_v:])
-        _deve_calc = new_valor > 0 and (
-            (new_parc != prev_parc or new_valor != prev_val) or
+        _deve_calc = new_valor > 0 and _start_col is not None and (
+            (new_parc != prev_parc or new_valor != prev_val or new_dc != prev_dc) or
             (_primeiro_render and _fut_vazio)
         )
         item["valor"] = new_valor; item["parcelas"] = new_parc
         if _deve_calc:
-            _auto_parcelas_v(item); mudou = True
+            _auto_parcelas_v(item, start_col=_start_col); mudou = True
         st.session_state[_pp_key] = new_parc
         st.session_state[_pv_key] = new_valor
-
-        # Período: 1ª parcela → última parcela
-        _nm = int(_re.match(r'(\d+)', new_parc).group(1)) if _re.match(r'(\d+)', new_parc) else 1
-        _idx_first = _next_idx_v
-        _idx_last  = min(_next_idx_v + _nm - 1, len(_ALL_V_COLS) - 1)
-        _lbl_first = _V_COL_LABEL.get(_ALL_V_COLS[_idx_first], "")
-        _lbl_last  = _V_COL_LABEL.get(_ALL_V_COLS[_idx_last], "")
-        _periodo_html = (
-            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_first}</span>"
-            f"<span style='color:#5c6bc0;'>→</span>"
-            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_last}</span>"
-            if new_valor > 0 else "<span style='color:#3a4060;'>—</span>"
-        )
-        row[3].markdown(
-            f"<div style='padding-top:9px;font-size:11px;display:flex;gap:4px;"
-            f"align-items:center;white-space:nowrap;'>{_periodo_html}</div>",
-            unsafe_allow_html=True)
+        st.session_state[_pdc_key] = new_dc
 
         item["quem"] = row[4].selectbox("", ["Adriely","Eduarda","dividido"],
             index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
@@ -1064,7 +1074,7 @@ with tab_var:
 
     def _hdr_var_paga():
         hdr = st.columns(_WCOLS_PAGA)
-        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Período","Quem","Onde","St",""]):
+        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Data Compra","Quem","Onde","St",""]):
             col.markdown(
                 f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
                 f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
@@ -1093,21 +1103,9 @@ with tab_var:
             key=f"vp_{i}", label_visibility="collapsed")
         item["parcelas"] = new_parc
 
-        _nm = int(_re.match(r'(\d+)', new_parc).group(1)) if _re.match(r'(\d+)', new_parc) else 1
-        _idx_first = _next_idx_v
-        _idx_last  = min(_next_idx_v + _nm - 1, len(_ALL_V_COLS) - 1)
-        _lbl_first = _V_COL_LABEL.get(_ALL_V_COLS[_idx_first], "")
-        _lbl_last  = _V_COL_LABEL.get(_ALL_V_COLS[_idx_last], "")
-        _periodo_html = (
-            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_first}</span>"
-            f"<span style='color:#5c6bc0;'>→</span>"
-            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_last}</span>"
-            if new_valor > 0 else "<span style='color:#3a4060;'>—</span>"
-        )
-        row[3].markdown(
-            f"<div style='padding-top:9px;font-size:11px;display:flex;gap:4px;"
-            f"align-items:center;white-space:nowrap;'>{_periodo_html}</div>",
-            unsafe_allow_html=True)
+        new_dc = row[3].text_input("", value=item.get("data_compra",""),
+            placeholder="DD/MM/AAAA", key=f"vdc_{i}", label_visibility="collapsed")
+        item["data_compra"] = new_dc
 
         item["quem"] = row[4].selectbox("", ["Adriely","Eduarda","dividido"],
             index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
