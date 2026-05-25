@@ -1292,6 +1292,8 @@ with tab_bal:
     st.markdown("#### Gastos do mês por categoria")
     det_a = {"Fixas":0.0, "Variáveis":0.0}
     det_e = {"Fixas":0.0, "Variáveis":0.0}
+    det_a_var_items = []   # [(descricao, valor_parcela)]
+    det_e_var_items = []
     for cat, meses in d["fixas"].items():
         val = float(meses.get(mes_sel,0) or 0)
         quem = d["fixas_quem"].get(cat,"dividido")
@@ -1300,38 +1302,59 @@ with tab_bal:
         else: det_a["Fixas"]+=val/2; det_e["Fixas"]+=val/2
     for item in d["variaveis"]:
         val = float(item.get("meses",{}).get(mes_sel,0) or 0)
+        if val <= 0: continue
         quem = item.get("quem","")
-        if quem=="Adriely": det_a["Variáveis"]+=val
-        elif quem=="Eduarda": det_e["Variáveis"]+=val
-        else: det_a["Variáveis"]+=val/2; det_e["Variáveis"]+=val/2
+        desc = item.get("descricao","—")
+        if quem=="Adriely":
+            det_a["Variáveis"]+=val
+            det_a_var_items.append((desc, val))
+        elif quem=="Eduarda":
+            det_e["Variáveis"]+=val
+            det_e_var_items.append((desc, val))
+        else:
+            det_a["Variáveis"]+=val/2; det_e["Variáveis"]+=val/2
+            det_a_var_items.append((desc, val/2))
+            det_e_var_items.append((desc, val/2))
+
+    def _var_rows_html(items):
+        if not items: return ""
+        rows = ""
+        for desc, v in items:
+            rows += (f"<div style='display:flex;justify-content:space-between;"
+                     f"padding:3px 0 3px 12px;border-bottom:1px solid #131d3a;'>"
+                     f"<span style='color:#7986cb;font-size:11px;'>{desc}</span>"
+                     f"<span style='color:#c5cae9;font-size:11px;'>{_fmt(v)}</span></div>")
+        return rows
 
     dc1, dc2 = st.columns(2)
     with dc1:
         st.markdown(f"""<div class="bloco">
             <div class="card-titulo">Adriely – Detalhamento</div>
             <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a2a5e;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #2a3f7e;">
                 <span style="color:#9fa8da;">Fixas (parte dela)</span>
                 <strong>{_fmt(det_a['Fixas'])}</strong>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
                 <span style="color:#9fa8da;">Variáveis</span>
                 <strong>{_fmt(det_a['Variáveis'])}</strong>
             </div>
+            {_var_rows_html(det_a_var_items)}
             </div>
         </div>""", unsafe_allow_html=True)
     with dc2:
         st.markdown(f"""<div class="bloco">
             <div class="card-titulo">Eduarda – Detalhamento</div>
             <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a2a5e;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #2a3f7e;">
                 <span style="color:#9fa8da;">Fixas (parte dela)</span>
                 <strong>{_fmt(det_e['Fixas'])}</strong>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0 2px 0;">
                 <span style="color:#9fa8da;">Variáveis</span>
                 <strong>{_fmt(det_e['Variáveis'])}</strong>
             </div>
+            {_var_rows_html(det_e_var_items)}
             </div>
         </div>""", unsafe_allow_html=True)
 
