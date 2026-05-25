@@ -776,9 +776,9 @@ with tab_fix:
     st.markdown("### 🏢 Despesas Fixas Mensais")
     st.caption("Despesas fixas são divididas 50/50 entre as sócias. Marque o status de pagamento.")
 
-    COLS_VIS = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai"]
-    col_lbl  = {"Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25","Jan":"Jan/26",
-                "Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26"}
+    COLS_VIS = COL_FIXAS   # Out/25 → Dez/26 — automático
+    col_lbl  = {col: lbl[:3] + "/" + lbl[-2:]
+                for col, lbl in COL_TO_MES.items() if col in COLS_VIS}
 
     fix_nova, fix_sv = st.columns([5,1])
     with fix_nova:
