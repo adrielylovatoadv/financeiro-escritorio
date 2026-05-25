@@ -1210,12 +1210,24 @@ with tab_var:
 with tab_bal:
     st.markdown("### ⚖️ Balanço das Sócias")
 
-    COLS_B = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai"]
-    cl_b   = {"Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25","Jan":"Jan/26",
-              "Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26"}
+    # Todos os meses disponíveis no sistema (automático a partir de COL_TO_MES)
+    COLS_B = COL_FIXAS  # ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out2","Nov2","Dez2"]
+    cl_b   = {col: COL_TO_MES[col].replace("/20","/" ).replace("/","/" ) for col in COLS_B}
+    # formata "Out/2025" → "Out/25" para caber no radio
+    cl_b   = {col: label[:3] + "/" + label[-2:] for col, label in COL_TO_MES.items() if col in COLS_B}
+
+    # Seleciona o mês atual por padrão
+    _hj_b  = _date.today()
+    _m2c_b = {(2025,10):"Out",(2025,11):"Nov",(2025,12):"Dez",
+              (2026,1):"Jan",(2026,2):"Fev",(2026,3):"Mar",(2026,4):"Abr",(2026,5):"Mai",
+              (2026,6):"Jun",(2026,7):"Jul",(2026,8):"Ago",(2026,9):"Set",
+              (2026,10):"Out2",(2026,11):"Nov2",(2026,12):"Dez2"}
+    _default_col = _m2c_b.get((_hj_b.year, _hj_b.month), "Mai")
+    _default_idx = COLS_B.index(_default_col) if _default_col in COLS_B else 0
 
     mes_sel = st.radio("Mês:", COLS_B, horizontal=True,
-                        format_func=lambda x: cl_b[x], key="bal_mes")
+                        format_func=lambda x: cl_b.get(x, x),
+                        index=_default_idx, key="bal_mes")
 
     mes_full = COL_TO_MES.get(mes_sel,"")
 
@@ -1229,9 +1241,12 @@ with tab_bal:
         if e.get("mes") == mes_full and e.get("status", "") != "repasse"
     )
     # honorários iniciais pagos no mês
-    _mes_num = {"Out":"10/2025","Nov":"11/2025","Dez":"12/2025",
-                "Jan":"01/2026","Fev":"02/2026","Mar":"03/2026",
-                "Abr":"04/2026","Mai":"05/2026"}
+    _abr2num = {"Jan":"01","Fev":"02","Mar":"03","Abr":"04","Mai":"05","Jun":"06",
+                "Jul":"07","Ago":"08","Set":"09","Out":"10","Nov":"11","Dez":"12"}
+    _mes_num = {}
+    for _col, _lbl in COL_TO_MES.items():
+        _parts = _lbl.split("/")   # e.g. "Out/2025" → ["Out","2025"]
+        _mes_num[_col] = f"{_abr2num.get(_parts[0],'00')}/{_parts[1]}"
     _mes_ref = _mes_num.get(mes_sel, "")
     honor_mes += sum(
         float(h.get("valor", 0)) for h in d.get("honorarios_iniciais", [])
