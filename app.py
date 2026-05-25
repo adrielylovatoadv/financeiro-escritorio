@@ -898,6 +898,13 @@ with tab_var:
 [data-baseweb="select"] [role="combobox"]{padding:3px 6px !important;font-size:12px !important;min-height:36px !important;}
 [data-baseweb="select"] [data-baseweb="icon"] svg{width:12px !important;height:12px !important;}
 [data-baseweb="select"] [aria-label="open"],[data-baseweb="select"] button{padding:0 4px !important;width:22px !important;}
+/* Botões nas linhas de dados: só o ícone, sem caixa */
+[data-testid="stHorizontalBlock"]:has([data-testid="stTextInput"]) .stButton>button{
+    background:transparent !important;border:none !important;box-shadow:none !important;
+    padding:2px 3px !important;min-height:unset !important;width:auto !important;
+    font-size:17px !important;line-height:1 !important;}
+[data-testid="stHorizontalBlock"]:has([data-testid="stTextInput"]) .stButton>button:hover{
+    background:rgba(255,255,255,0.07) !important;border-radius:4px !important;}
 </style>""", unsafe_allow_html=True)
 
     filtro_q = st.selectbox("Filtrar por sócia:", ["Todas","Adriely","Eduarda","dividido"],
