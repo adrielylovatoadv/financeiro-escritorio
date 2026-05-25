@@ -969,8 +969,10 @@ with tab_var:
                 item["meses"][_ALL_V_COLS[idx]] = monthly
 
     # ── cabeçalho da tabela ────────────────────────────────────────────────────
-    # colunas: Descrição | Valor | Parcelas | 1ª→última | Quem | Onde | St | M1 | M2 | M3 | M4 | Del
-    _WCOLS = [1.7, 0.75, 0.9, 1.0, 0.75, 0.85, 0.42, 0.82, 0.82, 0.82, 0.82, 0.32]
+    # Em aberto: Descrição | Valor | Parcelas | Período | Quem | Onde | St | M1 | M2 | M3 | M4 | Del
+    _WCOLS      = [1.7, 0.75, 0.9, 1.0, 0.75, 0.85, 0.42, 0.82, 0.82, 0.82, 0.82, 0.32]
+    # Pagas (sem meses): Descrição | Valor | Parcelas | Período | Quem | Onde | St | Del
+    _WCOLS_PAGA = [2.2, 0.85, 0.9, 1.2, 0.85, 1.1, 0.42, 0.32]
 
     def _hdr_var():
         hdr = st.columns(_WCOLS)
@@ -1060,6 +1062,64 @@ with tab_var:
         total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
         return mudou, del_req, total_item
 
+    def _hdr_var_paga():
+        hdr = st.columns(_WCOLS_PAGA)
+        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Período","Quem","Onde","St",""]):
+            col.markdown(
+                f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
+                f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
+                unsafe_allow_html=True)
+
+    def _render_var_paga(i, item):
+        import re as _re
+        quem    = item.get("quem","Adriely")
+        mudou   = False
+        del_req = False
+        row = st.columns(_WCOLS_PAGA)
+
+        item["descricao"] = row[0].text_input("", value=item.get("descricao",""),
+            key=f"vd_{i}", label_visibility="collapsed")
+        vv_str = st.session_state.get(f"vv_{i}", _vs(item.get("valor",0)))
+        vv_new = row[1].text_input("", value=vv_str, placeholder="0,00",
+            key=f"vv_{i}", label_visibility="collapsed")
+        try: new_valor = float(vv_new.replace(".","").replace(",",".")) if vv_new else 0.0
+        except: new_valor = 0.0
+        item["valor"] = new_valor
+
+        parc_str = item.get("parcelas","1x")
+        if parc_str not in PARCELAS_OPTS: parc_str = "1x"
+        new_parc = row[2].selectbox("", PARCELAS_OPTS,
+            index=PARCELAS_OPTS.index(parc_str),
+            key=f"vp_{i}", label_visibility="collapsed")
+        item["parcelas"] = new_parc
+
+        _nm = int(_re.match(r'(\d+)', new_parc).group(1)) if _re.match(r'(\d+)', new_parc) else 1
+        _idx_first = _next_idx_v
+        _idx_last  = min(_next_idx_v + _nm - 1, len(_ALL_V_COLS) - 1)
+        _lbl_first = _V_COL_LABEL.get(_ALL_V_COLS[_idx_first], "")
+        _lbl_last  = _V_COL_LABEL.get(_ALL_V_COLS[_idx_last], "")
+        _periodo_html = (
+            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_first}</span>"
+            f"<span style='color:#5c6bc0;'>→</span>"
+            f"<span style='color:#e8eaf6;font-weight:600;'>{_lbl_last}</span>"
+            if new_valor > 0 else "<span style='color:#3a4060;'>—</span>"
+        )
+        row[3].markdown(
+            f"<div style='padding-top:9px;font-size:11px;display:flex;gap:4px;"
+            f"align-items:center;white-space:nowrap;'>{_periodo_html}</div>",
+            unsafe_allow_html=True)
+
+        item["quem"] = row[4].selectbox("", ["Adriely","Eduarda","dividido"],
+            index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
+            key=f"vq_{i}", label_visibility="collapsed")
+        item["onde"] = row[5].text_input("", value=item.get("onde",""),
+            key=f"vo_{i}", label_visibility="collapsed")
+        if _st2(row[6], f"vst_{i}", item): mudou = True
+        if row[7].button("🗑️", key=f"vdel_{i}"): del_req = True
+
+        total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
+        return mudou, del_req, total_item
+
     to_del_v  = None
     mudou_var = False
     totais_v_col = {c: 0.0 for c in _ALL_V_COLS}
@@ -1109,10 +1169,10 @@ with tab_var:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander(f"✅ {len(pagas_idx)} despesa(s) paga(s) — "
                          f"{_fmt(total_pagas_geral)} · conferência"):
-            _hdr_var()
+            _hdr_var_paga()
             for i in pagas_idx:
                 item = d["variaveis"][i]
-                mudou, del_req, total_item = _render_var_row(i, item)
+                mudou, del_req, total_item = _render_var_paga(i, item)
                 if mudou: mudou_var = True
                 if del_req: to_del_v = i
                 for col in _ALL_V_COLS:
