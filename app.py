@@ -904,37 +904,44 @@ with tab_var:
     with col_vs:
         if st.button("💾 Salvar  ", key="sv_var"): salvar(d); st.success("Salvo!")
 
-    # Todas as colunas de meses disponíveis
-    _ALL_V_COLS = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai",
-                   "Jun","Jul","Ago","Set","Out2","Nov2","Dez2"]
+    # Colunas de meses (2025 → 2027) para suportar até 20 parcelas
+    _ALL_V_COLS = [
+        "Out","Nov","Dez",
+        "Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out2","Nov2","Dez2",
+        "Jan27","Fev27","Mar27","Abr27","Mai27","Jun27","Jul27","Ago27","Set27","Out27","Nov27","Dez27",
+    ]
     _V_COL_LABEL = {
-        "Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25","Jan":"Jan/26",
-        "Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26",
+        "Out":"Out/25","Nov":"Nov/25","Dez":"Dez/25",
+        "Jan":"Jan/26","Fev":"Fev/26","Mar":"Mar/26","Abr":"Abr/26","Mai":"Mai/26",
         "Jun":"Jun/26","Jul":"Jul/26","Ago":"Ago/26","Set":"Set/26",
         "Out2":"Out/26","Nov2":"Nov/26","Dez2":"Dez/26",
+        "Jan27":"Jan/27","Fev27":"Fev/27","Mar27":"Mar/27","Abr27":"Abr/27","Mai27":"Mai/27",
+        "Jun27":"Jun/27","Jul27":"Jul/27","Ago27":"Ago/27","Set27":"Set/27",
+        "Out27":"Out/27","Nov27":"Nov/27","Dez27":"Dez/27",
     }
-
-    # Detecta mês atual e calcula visíveis / passados
     _ym2col_v = {
         (2025,10):"Out",(2025,11):"Nov",(2025,12):"Dez",
         (2026,1):"Jan",(2026,2):"Fev",(2026,3):"Mar",(2026,4):"Abr",(2026,5):"Mai",
         (2026,6):"Jun",(2026,7):"Jul",(2026,8):"Ago",(2026,9):"Set",
-        (2026,10):"Out2",(2026,11):"Nov2",(2026,12):"Dez2"
+        (2026,10):"Out2",(2026,11):"Nov2",(2026,12):"Dez2",
+        (2027,1):"Jan27",(2027,2):"Fev27",(2027,3):"Mar27",(2027,4):"Abr27",(2027,5):"Mai27",
+        (2027,6):"Jun27",(2027,7):"Jul27",(2027,8):"Ago27",(2027,9):"Set27",
+        (2027,10):"Out27",(2027,11):"Nov27",(2027,12):"Dez27",
     }
     _hj_v      = _date.today()
     _cur_col_v = _ym2col_v.get((_hj_v.year, _hj_v.month), "Mai")
     _cur_idx_v = _ALL_V_COLS.index(_cur_col_v) if _cur_col_v in _ALL_V_COLS else 7
     _next_idx_v = min(_cur_idx_v + 1, len(_ALL_V_COLS) - 1)
-    _COLS_MAIN_V = _ALL_V_COLS[_cur_idx_v : _cur_idx_v + 4]  # mês atual + próximos 3
-    _COLS_PAST_V = _ALL_V_COLS[:_cur_idx_v]                   # meses anteriores
-    _next_lbl_v  = _V_COL_LABEL.get(_ALL_V_COLS[_next_idx_v], "próx.")
+    _COLS_PAST_V = _ALL_V_COLS[:_cur_idx_v]
+
+    PARCELAS_OPTS = [f"{n}x" for n in range(1, 21)]
 
     def _auto_parcelas_v(item):
         import re
         m = re.match(r'(\d+)', str(item.get("parcelas","1")))
         n = int(m.group(1)) if m else 1
         total = float(item.get("valor", 0) or 0)
-        if n <= 0: return
+        if n <= 0 or total <= 0: return
         monthly = round(total / n, 2)
         if "meses" not in item: item["meses"] = {}
         for c in _ALL_V_COLS[_next_idx_v:]:
@@ -944,81 +951,101 @@ with tab_var:
             if idx < len(_ALL_V_COLS):
                 item["meses"][_ALL_V_COLS[idx]] = monthly
 
-    NCOLS_M = len(_COLS_MAIN_V)
-
     def _render_var_row(i, item):
-        """Renderiza uma linha de despesa variável. Retorna (mudou, del_req)."""
-        quem   = item.get("quem","Adriely")
-        mudou  = False
+        quem    = item.get("quem","Adriely")
+        mudou   = False
         del_req = False
-        row = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
+
+        # ── linha principal (1 linha por item) ──────────────────────────────
+        row = st.columns([3.0, 1.2, 1.0, 0.9, 1.2, 0.5, 0.4])
+
         item["descricao"] = row[0].text_input("", value=item.get("descricao",""),
-            key=f"vd_{i}", label_visibility="collapsed")
+            placeholder="Descrição", key=f"vd_{i}", label_visibility="collapsed")
 
         vv_str = st.session_state.get(f"vv_{i}", _vs(item.get("valor",0)))
         vv_new = row[1].text_input("", value=vv_str, placeholder="0,00",
             key=f"vv_{i}", label_visibility="collapsed")
-        try: vvv = float(vv_new.replace(".","").replace(",",".")) if vv_new else 0.0
-        except: vvv = 0.0
-        item["valor"] = vvv
+        try: new_valor = float(vv_new.replace(".","").replace(",",".")) if vv_new else 0.0
+        except: new_valor = 0.0
 
-        item["parcelas"] = row[2].text_input("", value=item.get("parcelas","1x"),
+        parc_str = item.get("parcelas","1x")
+        if parc_str not in PARCELAS_OPTS: parc_str = "1x"
+        new_parc = row[2].selectbox("", PARCELAS_OPTS,
+            index=PARCELAS_OPTS.index(parc_str),
             key=f"vp_{i}", label_visibility="collapsed")
+
         item["quem"] = row[3].selectbox("", ["Adriely","Eduarda","dividido"],
             index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
             key=f"vq_{i}", label_visibility="collapsed")
         item["onde"] = row[4].text_input("", value=item.get("onde",""),
-            key=f"vo_{i}", label_visibility="collapsed")
+            placeholder="Onde", key=f"vo_{i}", label_visibility="collapsed")
         if _st2(row[5], f"vst_{i}", item): mudou = True
+        if row[6].button("🗑️", key=f"vdel_{i}"): del_req = True
 
-        for j, col in enumerate(_COLS_MAIN_V):
-            cur  = item.get("meses",{}).get(col, 0)
-            cstr = st.session_state.get(f"vm_{i}_{col}", _vs(cur))
-            cstr_new = row[6+j].text_input("", value=cstr, placeholder="0,00",
-                key=f"vm_{i}_{col}", label_visibility="collapsed")
-            try: cval = float(cstr_new.replace(".","").replace(",",".")) if cstr_new else 0.0
-            except: cval = 0.0
-            if "meses" not in item: item["meses"] = {}
-            item["meses"][col] = cval
+        # Auto-calcular parcelas quando valor ou nº de parcelas muda
+        _pp_key, _pv_key = f"_pp_{i}", f"_pv_{i}"
+        prev_parc = st.session_state.get(_pp_key, new_parc)
+        prev_val  = st.session_state.get(_pv_key, new_valor)
+        if (new_parc != prev_parc or new_valor != prev_val) and new_valor > 0:
+            item["valor"]    = new_valor
+            item["parcelas"] = new_parc
+            _auto_parcelas_v(item)
+            mudou = True
+        else:
+            item["valor"]    = new_valor
+            item["parcelas"] = new_parc
+        st.session_state[_pp_key] = new_parc
+        st.session_state[_pv_key] = new_valor
 
-        total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
-        row[-3].markdown(f"<div style='padding-top:8px;font-size:12px;font-weight:600;"
-                         f"color:#ffa726;'>{_fmt(total_item)}</div>", unsafe_allow_html=True)
+        # ── prévia de parcelas (linha compacta abaixo) ──────────────────────
+        _future = [(c, float(item.get("meses",{}).get(c,0) or 0))
+                   for c in _ALL_V_COLS[_cur_idx_v:] if item.get("meses",{}).get(c,0)]
+        _past_vals = {c: float(item.get("meses",{}).get(c,0) or 0) for c in _COLS_PAST_V}
+        _total_past = sum(_past_vals.values())
+        total_item  = sum(v for _,v in _future) + _total_past
 
-        if row[-2].button("↺", key=f"vcalc_{i}"):
-            _auto_parcelas_v(item); salvar(d); st.rerun()
-
-        if row[-1].button("🗑️", key=f"vdel_{i}"): del_req = True
+        if _future:
+            chips = "  ·  ".join(
+                f"<span style='background:#1a2a5e;border-radius:4px;padding:1px 6px;"
+                f"font-size:11px;color:#9fa8da;'>"
+                f"<b style='color:#e8eaf6;'>{_V_COL_LABEL.get(c,c)}</b> {_fmt(v)}</span>"
+                for c, v in _future
+            )
+            total_badge = (f"<span style='margin-left:8px;font-size:11px;font-weight:700;"
+                           f"color:#ffa726;'>Total: {_fmt(total_item)}</span>")
+            st.markdown(
+                f"<div style='margin:-2px 0 6px 4px;line-height:2;'>{chips}{total_badge}</div>",
+                unsafe_allow_html=True)
+        elif total_item == 0:
+            st.markdown(
+                "<div style='margin:-2px 0 6px 4px;font-size:11px;color:#3a4060;'>"
+                "Preencha o valor e selecione as parcelas para calcular automaticamente.</div>",
+                unsafe_allow_html=True)
 
         # Meses anteriores colapsados
-        if _COLS_PAST_V:
-            _past_vals  = {c: float(item.get("meses",{}).get(c, 0) or 0) for c in _COLS_PAST_V}
-            _total_past = sum(_past_vals.values())
-            if _total_past > 0:
-                n_past = sum(1 for v in _past_vals.values() if v > 0)
-                with st.expander(f"📂 {n_past} parcela(s) anteriores — {_fmt(_total_past)}"):
-                    pcols = st.columns(len(_COLS_PAST_V) + 1)
-                    for j, col in enumerate(_COLS_PAST_V):
-                        vp    = _past_vals[col]
-                        color = "#a5d6a7" if vp > 0 else "#3a4060"
-                        pcols[j].markdown(
-                            f"<div style='text-align:center;padding:4px;'>"
-                            f"<div style='font-size:10px;color:#7986cb;'>{_V_COL_LABEL.get(col,col)}</div>"
-                            f"<div style='font-size:12px;color:{color};'>{_fmt(vp) if vp > 0 else '—'}</div>"
-                            f"</div>", unsafe_allow_html=True)
-                    pcols[-1].markdown(
-                        f"<div style='padding-top:8px;'>"
-                        f"<span style='font-size:12px;color:#ffa726;font-weight:600;'>{_fmt(_total_past)}</span>"
+        if _total_past > 0:
+            n_past = sum(1 for v in _past_vals.values() if v > 0)
+            with st.expander(f"📂 {n_past} meses anteriores — {_fmt(_total_past)} já pago(s)"):
+                pcols = st.columns(len(_COLS_PAST_V) + 1)
+                for j, col in enumerate(_COLS_PAST_V):
+                    vp    = _past_vals[col]
+                    color = "#a5d6a7" if vp > 0 else "#3a4060"
+                    pcols[j].markdown(
+                        f"<div style='text-align:center;padding:4px;'>"
+                        f"<div style='font-size:10px;color:#7986cb;'>{_V_COL_LABEL.get(col,col)}</div>"
+                        f"<div style='font-size:12px;color:{color};'>{_fmt(vp) if vp > 0 else '—'}</div>"
                         f"</div>", unsafe_allow_html=True)
+                pcols[-1].markdown(
+                    f"<div style='padding-top:8px;font-size:12px;color:#ffa726;font-weight:600;'>"
+                    f"{_fmt(_total_past)}</div>", unsafe_allow_html=True)
+
+        st.markdown("<div style='border-top:1px solid #1a2a5e;margin:4px 0 8px 0;'></div>",
+                    unsafe_allow_html=True)
         return mudou, del_req, total_item
 
     def _hdr_var():
-        hdr = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
-        for lbl, col in zip(
-            ["Descrição","Val. Total","Parcelas","Quem","Onde","Status"] +
-            [_V_COL_LABEL[c] for c in _COLS_MAIN_V] + ["Total", f"↺{_next_lbl_v}", ""],
-            hdr
-        ):
+        hdr = st.columns([3.0, 1.2, 1.0, 0.9, 1.2, 0.5, 0.4])
+        for lbl, col in zip(["Descrição","Val. Total","Parcelas","Quem","Onde","St",""], hdr):
             col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                          unsafe_allow_html=True)
 
@@ -1035,21 +1062,19 @@ with tab_var:
         st.markdown("<span style='font-size:13px;font-weight:600;color:#ef5350;'>"
                     "⚠️ Em aberto / parcelas futuras</span>", unsafe_allow_html=True)
         _hdr_var()
+        total_aberto = 0.0
         for i in pendentes_idx:
             item = d["variaveis"][i]
             mudou, del_req, total_item = _render_var_row(i, item)
+            total_aberto += total_item
             if mudou: mudou_var = True
             if del_req: to_del_v = i
             for col in _ALL_V_COLS:
                 totais_v_col[col] += float(item.get("meses",{}).get(col, 0) or 0)
-
-        # Totais dos pendentes
-        tot_v = st.columns([2.5, 1, 0.9, 1, 1.2, 1] + [0.85]*NCOLS_M + [0.9, 0.5, 0.4])
-        tot_v[0].markdown("<strong style='color:#7986cb;font-size:12px;'>TOTAL EM ABERTO</strong>",
-                          unsafe_allow_html=True)
-        for j, col in enumerate(_COLS_MAIN_V):
-            tot_v[6+j].markdown(f"<strong style='color:#ffa726;font-size:11px;'>"
-                                 f"{_fmt(totais_v_col[col])}</strong>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='text-align:right;font-size:13px;font-weight:700;color:#ffa726;"
+            f"margin-bottom:12px;'>Total em aberto: {_fmt(total_aberto)}</div>",
+            unsafe_allow_html=True)
     else:
         st.markdown("""<div class="bloco" style="text-align:center;padding:20px;">
             <span style="color:#4caf50;font-size:14px;">Nenhuma despesa variável em aberto.</span>
