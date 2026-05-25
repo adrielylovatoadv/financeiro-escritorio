@@ -904,7 +904,7 @@ with tab_var:
     with col_vs:
         if st.button("💾 Salvar  ", key="sv_var"): salvar(d); st.success("Salvo!")
 
-    # Colunas de meses (2025 → 2027) para suportar até 20 parcelas
+    # ── constantes de meses (2025 → 2027) ─────────────────────────────────────
     _ALL_V_COLS = [
         "Out","Nov","Dez",
         "Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out2","Nov2","Dez2",
@@ -928,11 +928,12 @@ with tab_var:
         (2027,6):"Jun27",(2027,7):"Jul27",(2027,8):"Ago27",(2027,9):"Set27",
         (2027,10):"Out27",(2027,11):"Nov27",(2027,12):"Dez27",
     }
-    _hj_v      = _date.today()
-    _cur_col_v = _ym2col_v.get((_hj_v.year, _hj_v.month), "Mai")
-    _cur_idx_v = _ALL_V_COLS.index(_cur_col_v) if _cur_col_v in _ALL_V_COLS else 7
+    _hj_v       = _date.today()
+    _cur_col_v  = _ym2col_v.get((_hj_v.year, _hj_v.month), "Mai")
+    _cur_idx_v  = _ALL_V_COLS.index(_cur_col_v) if _cur_col_v in _ALL_V_COLS else 7
     _next_idx_v = min(_cur_idx_v + 1, len(_ALL_V_COLS) - 1)
-    _COLS_PAST_V = _ALL_V_COLS[:_cur_idx_v]
+    # Próximos 3 meses (Jun, Jul, Ago se hoje = Mai)
+    _N3 = _ALL_V_COLS[_next_idx_v : _next_idx_v + 3]
 
     PARCELAS_OPTS = [f"{n}x" for n in range(1, 21)]
 
@@ -951,13 +952,24 @@ with tab_var:
             if idx < len(_ALL_V_COLS):
                 item["meses"][_ALL_V_COLS[idx]] = monthly
 
+    # ── cabeçalho da tabela ────────────────────────────────────────────────────
+    # colunas: Descrição | Valor | Parcelas | Quem | Onde | St | M1 | M2 | M3 | Del
+    _WCOLS = [2.4, 0.95, 0.75, 0.85, 1.0, 0.45, 0.85, 0.85, 0.85, 0.35]
+
+    def _hdr_var():
+        hdr = st.columns(_WCOLS)
+        lbl_n3 = [_V_COL_LABEL.get(c, c) for c in _N3]
+        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Quem","Onde","St"] + lbl_n3 + [""]):
+            col.markdown(
+                f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
+                f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
+                unsafe_allow_html=True)
+
     def _render_var_row(i, item):
         quem    = item.get("quem","Adriely")
         mudou   = False
         del_req = False
-
-        # ── linha principal (1 linha por item) ──────────────────────────────
-        row = st.columns([3.0, 1.2, 1.0, 0.9, 1.2, 0.5, 0.4])
+        row = st.columns(_WCOLS)
 
         item["descricao"] = row[0].text_input("", value=item.get("descricao",""),
             placeholder="Descrição", key=f"vd_{i}", label_visibility="collapsed")
@@ -980,87 +992,45 @@ with tab_var:
         item["onde"] = row[4].text_input("", value=item.get("onde",""),
             placeholder="Onde", key=f"vo_{i}", label_visibility="collapsed")
         if _st2(row[5], f"vst_{i}", item): mudou = True
-        if row[6].button("🗑️", key=f"vdel_{i}"): del_req = True
 
-        # Auto-calcular parcelas quando valor ou nº de parcelas muda
+        # Auto-calcular quando valor ou parcelas muda
         _pp_key, _pv_key = f"_pp_{i}", f"_pv_{i}"
         prev_parc = st.session_state.get(_pp_key, new_parc)
         prev_val  = st.session_state.get(_pv_key, new_valor)
         if (new_parc != prev_parc or new_valor != prev_val) and new_valor > 0:
-            item["valor"]    = new_valor
-            item["parcelas"] = new_parc
-            _auto_parcelas_v(item)
-            mudou = True
+            item["valor"] = new_valor; item["parcelas"] = new_parc
+            _auto_parcelas_v(item); mudou = True
         else:
-            item["valor"]    = new_valor
-            item["parcelas"] = new_parc
+            item["valor"] = new_valor; item["parcelas"] = new_parc
         st.session_state[_pp_key] = new_parc
         st.session_state[_pv_key] = new_valor
 
-        # ── prévia de parcelas (linha compacta abaixo) ──────────────────────
-        _future = [(c, float(item.get("meses",{}).get(c,0) or 0))
-                   for c in _ALL_V_COLS[_cur_idx_v:] if item.get("meses",{}).get(c,0)]
-        _past_vals = {c: float(item.get("meses",{}).get(c,0) or 0) for c in _COLS_PAST_V}
-        _total_past = sum(_past_vals.values())
-        total_item  = sum(v for _,v in _future) + _total_past
-
-        if _future:
-            chips = "  ·  ".join(
-                f"<span style='background:#1a2a5e;border-radius:4px;padding:1px 6px;"
-                f"font-size:11px;color:#9fa8da;'>"
-                f"<b style='color:#e8eaf6;'>{_V_COL_LABEL.get(c,c)}</b> {_fmt(v)}</span>"
-                for c, v in _future
-            )
-            total_badge = (f"<span style='margin-left:8px;font-size:11px;font-weight:700;"
-                           f"color:#ffa726;'>Total: {_fmt(total_item)}</span>")
-            st.markdown(
-                f"<div style='margin:-2px 0 6px 4px;line-height:2;'>{chips}{total_badge}</div>",
-                unsafe_allow_html=True)
-        elif total_item == 0:
-            st.markdown(
-                "<div style='margin:-2px 0 6px 4px;font-size:11px;color:#3a4060;'>"
-                "Preencha o valor e selecione as parcelas para calcular automaticamente.</div>",
+        # Próximos 3 meses — valores calculados (só leitura)
+        for j, mc in enumerate(_N3):
+            val = float(item.get("meses",{}).get(mc, 0) or 0)
+            row[6+j].markdown(
+                f"<div style='padding-top:8px;font-size:12px;text-align:center;"
+                f"color:{'#e8eaf6' if val > 0 else '#3a4060'};'>"
+                f"{'<b>'+_fmt(val)+'</b>' if val > 0 else '—'}</div>",
                 unsafe_allow_html=True)
 
-        # Meses anteriores colapsados
-        if _total_past > 0:
-            n_past = sum(1 for v in _past_vals.values() if v > 0)
-            with st.expander(f"📂 {n_past} meses anteriores — {_fmt(_total_past)} já pago(s)"):
-                pcols = st.columns(len(_COLS_PAST_V) + 1)
-                for j, col in enumerate(_COLS_PAST_V):
-                    vp    = _past_vals[col]
-                    color = "#a5d6a7" if vp > 0 else "#3a4060"
-                    pcols[j].markdown(
-                        f"<div style='text-align:center;padding:4px;'>"
-                        f"<div style='font-size:10px;color:#7986cb;'>{_V_COL_LABEL.get(col,col)}</div>"
-                        f"<div style='font-size:12px;color:{color};'>{_fmt(vp) if vp > 0 else '—'}</div>"
-                        f"</div>", unsafe_allow_html=True)
-                pcols[-1].markdown(
-                    f"<div style='padding-top:8px;font-size:12px;color:#ffa726;font-weight:600;'>"
-                    f"{_fmt(_total_past)}</div>", unsafe_allow_html=True)
+        if row[9].button("🗑️", key=f"vdel_{i}"): del_req = True
 
-        st.markdown("<div style='border-top:1px solid #1a2a5e;margin:4px 0 8px 0;'></div>",
-                    unsafe_allow_html=True)
+        total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
         return mudou, del_req, total_item
-
-    def _hdr_var():
-        hdr = st.columns([3.0, 1.2, 1.0, 0.9, 1.2, 0.5, 0.4])
-        for lbl, col in zip(["Descrição","Val. Total","Parcelas","Quem","Onde","St",""], hdr):
-            col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
-                         unsafe_allow_html=True)
 
     to_del_v  = None
     mudou_var = False
     totais_v_col = {c: 0.0 for c in _ALL_V_COLS}
 
-    # ── Seção 1: Em aberto (pendente) ─────────────────────────────────────────
+    # ── Seção 1: Em aberto ────────────────────────────────────────────────────
     pendentes_idx = [i for i, it in enumerate(d["variaveis"])
                      if it.get("status","pendente") == "pendente"
                      and (filtro_q == "Todas" or it.get("quem") == filtro_q)]
 
+    st.markdown("<span style='font-size:13px;font-weight:700;color:#ef5350;'>"
+                "⚠️ Em aberto</span>", unsafe_allow_html=True)
     if pendentes_idx:
-        st.markdown("<span style='font-size:13px;font-weight:600;color:#ef5350;'>"
-                    "⚠️ Em aberto / parcelas futuras</span>", unsafe_allow_html=True)
         _hdr_var()
         total_aberto = 0.0
         for i in pendentes_idx:
@@ -1071,16 +1041,22 @@ with tab_var:
             if del_req: to_del_v = i
             for col in _ALL_V_COLS:
                 totais_v_col[col] += float(item.get("meses",{}).get(col, 0) or 0)
-        st.markdown(
-            f"<div style='text-align:right;font-size:13px;font-weight:700;color:#ffa726;"
-            f"margin-bottom:12px;'>Total em aberto: {_fmt(total_aberto)}</div>",
-            unsafe_allow_html=True)
+        # linha de totais
+        tot = st.columns(_WCOLS)
+        tot[0].markdown("<div style='font-size:11px;font-weight:700;color:#7986cb;"
+                        "padding-top:6px;border-top:1px solid #2a3f7e;'>TOTAL</div>",
+                        unsafe_allow_html=True)
+        for j, mc in enumerate(_N3):
+            v = totais_v_col[mc]
+            tot[6+j].markdown(
+                f"<div style='font-size:11px;font-weight:700;color:#ffa726;text-align:center;"
+                f"padding-top:6px;border-top:1px solid #2a3f7e;'>{_fmt(v) if v else '—'}</div>",
+                unsafe_allow_html=True)
     else:
-        st.markdown("""<div class="bloco" style="text-align:center;padding:20px;">
-            <span style="color:#4caf50;font-size:14px;">Nenhuma despesa variável em aberto.</span>
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div style='color:#4caf50;font-size:13px;padding:8px 0;'>"
+                    "Nenhuma despesa em aberto.</div>", unsafe_allow_html=True)
 
-    # ── Seção 2: Totalmente pagas (conferência) ────────────────────────────────
+    # ── Seção 2: Pagas — expander de conferência ──────────────────────────────
     pagas_idx = [i for i, it in enumerate(d["variaveis"])
                  if it.get("status","pendente") == "pago"
                  and (filtro_q == "Todas" or it.get("quem") == filtro_q)]
@@ -1088,11 +1064,10 @@ with tab_var:
     if pagas_idx:
         total_pagas_geral = sum(
             sum(float(d["variaveis"][i].get("meses",{}).get(c,0) or 0) for c in _ALL_V_COLS)
-            for i in pagas_idx
-        )
+            for i in pagas_idx)
         st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander(f"✅ {len(pagas_idx)} despesa(s) totalmente paga(s) — "
-                         f"{_fmt(total_pagas_geral)} · clique para conferência"):
+        with st.expander(f"✅ {len(pagas_idx)} despesa(s) paga(s) — "
+                         f"{_fmt(total_pagas_geral)} · conferência"):
             _hdr_var()
             for i in pagas_idx:
                 item = d["variaveis"][i]
