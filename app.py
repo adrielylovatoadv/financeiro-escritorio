@@ -932,8 +932,8 @@ with tab_var:
     _cur_col_v  = _ym2col_v.get((_hj_v.year, _hj_v.month), "Mai")
     _cur_idx_v  = _ALL_V_COLS.index(_cur_col_v) if _cur_col_v in _ALL_V_COLS else 7
     _next_idx_v = min(_cur_idx_v + 1, len(_ALL_V_COLS) - 1)
-    # Próximos 3 meses (Jun, Jul, Ago se hoje = Mai)
-    _N3 = _ALL_V_COLS[_next_idx_v : _next_idx_v + 3]
+    # Mês atual + próximos 3 (Mai, Jun, Jul, Ago se hoje = Mai)
+    _N3 = _ALL_V_COLS[_cur_idx_v : _cur_idx_v + 4]
 
     PARCELAS_OPTS = [f"{n}x" for n in range(1, 21)]
 
@@ -954,7 +954,7 @@ with tab_var:
 
     # ── cabeçalho da tabela ────────────────────────────────────────────────────
     # colunas: Descrição | Valor | Parcelas | Quem | Onde | St | M1 | M2 | M3 | Del
-    _WCOLS = [1.8, 0.8, 0.75, 0.8, 0.95, 0.45, 0.85, 0.85, 0.85, 0.35]
+    _WCOLS = [1.8, 0.8, 0.75, 0.8, 0.95, 0.45, 0.85, 0.85, 0.85, 0.85, 0.35]
 
     def _hdr_var():
         hdr = st.columns(_WCOLS)
@@ -1020,7 +1020,7 @@ with tab_var:
             if "meses" not in item: item["meses"] = {}
             item["meses"][mc] = cval
 
-        if row[9].button("🗑️", key=f"vdel_{i}"): del_req = True
+        if row[10].button("🗑️", key=f"vdel_{i}"): del_req = True
 
         total_item = sum(float(item.get("meses",{}).get(c, 0) or 0) for c in _ALL_V_COLS)
         return mudou, del_req, total_item
