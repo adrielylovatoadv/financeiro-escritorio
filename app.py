@@ -1026,8 +1026,16 @@ with tab_var:
             key=f"vp_{i}", label_visibility="collapsed")
 
         # Data da compra — determina início da cobrança (≤10: mesmo mês; >10: próximo mês)
-        new_dc = row[3].text_input("", value=item.get("data_compra",""),
-            placeholder="DD/MM/AAAA", key=f"vdc_{i}", label_visibility="collapsed")
+        _dc_str = item.get("data_compra", "")
+        _dc_val = None
+        if _dc_str and len(_dc_str) == 10:
+            try:
+                _p = _dc_str.split("/")
+                _dc_val = _date(int(_p[2]), int(_p[1]), int(_p[0]))
+            except: pass
+        _picked = row[3].date_input("", value=_dc_val, key=f"vdc_{i}",
+            label_visibility="collapsed", format="DD/MM/YYYY")
+        new_dc = _picked.strftime("%d/%m/%Y") if _picked else ""
         item["data_compra"] = new_dc
         _start_col = _calc_start_col_v(new_dc)
 
@@ -1103,9 +1111,16 @@ with tab_var:
             key=f"vp_{i}", label_visibility="collapsed")
         item["parcelas"] = new_parc
 
-        new_dc = row[3].text_input("", value=item.get("data_compra",""),
-            placeholder="DD/MM/AAAA", key=f"vdc_{i}", label_visibility="collapsed")
-        item["data_compra"] = new_dc
+        _dc_str2 = item.get("data_compra", "")
+        _dc_val2 = None
+        if _dc_str2 and len(_dc_str2) == 10:
+            try:
+                _p2 = _dc_str2.split("/")
+                _dc_val2 = _date(int(_p2[2]), int(_p2[1]), int(_p2[0]))
+            except: pass
+        _picked2 = row[3].date_input("", value=_dc_val2, key=f"vdc_{i}",
+            label_visibility="collapsed", format="DD/MM/YYYY")
+        item["data_compra"] = _picked2.strftime("%d/%m/%Y") if _picked2 else ""
 
         item["quem"] = row[4].selectbox("", ["Adriely","Eduarda","dividido"],
             index=["Adriely","Eduarda","dividido"].index(quem) if quem in ["Adriely","Eduarda","dividido"] else 0,
