@@ -1087,7 +1087,7 @@ with tab_var:
         hdr = st.columns(_WCOLS)
         lbl_n3 = [_V_COL_LABEL.get(c, c) for c in _N3]
         for col, lbl in zip(hdr,
-            ["Descrição","Valor","Parcelas","Data Compra","Quem","Onde","St"] + lbl_n3 + [""]):
+            ["Descrição","Valor","Parcelas","Data 1ª Parcela","Quem","Onde","St"] + lbl_n3 + [""]):
             col.markdown(
                 f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
                 f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
@@ -1181,7 +1181,7 @@ with tab_var:
 
     def _hdr_var_paga():
         hdr = st.columns(_WCOLS_PAGA)
-        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Data Compra","Quem","Onde","St",""]):
+        for col, lbl in zip(hdr, ["Descrição","Valor","Parcelas","Data 1ª Parcela","Quem","Onde","St",""]):
             col.markdown(
                 f"<div style='font-size:10px;font-weight:700;color:#5c6bc0;"
                 f"padding:4px 2px;border-bottom:1px solid #2a3f7e;'>{lbl}</div>",
