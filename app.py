@@ -625,14 +625,48 @@ with tab_ac:
     if to_del is not None:
         d["acordos"].pop(to_del); salvar(d); st.rerun()
 
-    total_ac = sum(float(a.get("honorarios",0)) for a in d["acordos"])
-    pago_ac  = sum(float(a.get("honorarios",0)) for a in d["acordos"] if a.get("status")=="pago")
-    pend_ac  = total_ac - pago_ac
+    total_ac   = sum(float(a.get("honorarios",0)) for a in d["acordos"])
+    pago_ac    = sum(float(a.get("honorarios",0)) for a in d["acordos"] if a.get("status")=="pago")
+    repasse_ac = sum(float(a.get("honorarios",0)) for a in d["acordos"] if a.get("status")=="repasse")
+    pend_ac    = sum(float(a.get("honorarios",0)) for a in d["acordos"] if a.get("status")=="pendente")
+    # valor líquido a repassar ao cliente = valor_acordo - honorarios (para status repasse)
+    repasse_cliente = sum(
+        float(a.get("valor_acordo",0)) - float(a.get("honorarios",0))
+        for a in d["acordos"] if a.get("status")=="repasse"
+    )
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-    c1,c2,c3 = st.columns(3)
+    c1,c2,c3,c4 = st.columns(4)
     c1.metric("Total Honorários", _fmt(total_ac))
-    c2.metric("Recebido", _fmt(pago_ac))
-    c3.metric("Pendente", _fmt(pend_ac))
+    c2.metric("Recebido", _fmt(pago_ac + repasse_ac))
+    c3.metric("Pendente de Recebimento", _fmt(pend_ac))
+    c4.metric("⚠️ A Repassar ao Cliente", _fmt(repasse_cliente))
+    if repasse_cliente > 0:
+        repasse_items = [a for a in d["acordos"] if a.get("status")=="repasse"]
+        linhas = "".join(
+            f"<tr><td style='padding:4px 8px;'>{a.get('cliente','')}</td>"
+            f"<td style='padding:4px 8px;'>{a.get('mes','')}</td>"
+            f"<td style='padding:4px 8px;text-align:right;'>{_fmt(float(a.get('valor_acordo',0)))}</td>"
+            f"<td style='padding:4px 8px;text-align:right;color:#4caf50;'>{_fmt(float(a.get('honorarios',0)))}</td>"
+            f"<td style='padding:4px 8px;text-align:right;color:#ffb300;font-weight:600;'>"
+            f"{_fmt(float(a.get('valor_acordo',0)) - float(a.get('honorarios',0)))}</td></tr>"
+            for a in repasse_items
+        )
+        st.markdown(f"""
+        <div class="bloco" style="border-color:#ffb300;margin-top:8px;">
+          <span style="color:#ffb300;font-size:12px;font-weight:600;">🟡 PENDENTE DE REPASSE AO CLIENTE</span>
+          <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;">
+            <thead>
+              <tr style="color:#7986cb;">
+                <th style="text-align:left;padding:4px 8px;">Cliente</th>
+                <th style="padding:4px 8px;">Mês</th>
+                <th style="text-align:right;padding:4px 8px;">Valor Acordo</th>
+                <th style="text-align:right;padding:4px 8px;">Honorários (escritório)</th>
+                <th style="text-align:right;padding:4px 8px;">A Repassar</th>
+              </tr>
+            </thead>
+            <tbody>{linhas}</tbody>
+          </table>
+        </div>""", unsafe_allow_html=True)
 
     if d["acordos"]:
         df_ac = pd.DataFrame([{
