@@ -574,16 +574,11 @@ with tab_ac:
     </div>""", unsafe_allow_html=True)
     st.markdown(LEGENDA_RECEITAS, unsafe_allow_html=True)
 
-    ca, cs = st.columns([6,1])
-    with ca:
-        if st.button("➕ Novo Acordo"):
-            d["acordos"].append({"mes":MESES[0],"data_pagamento":"","cliente":"","reu":"",
-                                  "objeto":"","processo":"","valor_acordo":0.0,
-                                  "honorarios":0.0,"status":"pendente"})
-            salvar(d); st.rerun()
-    with cs:
-        if st.button("💾 Salvar", key="sv_ac"):
-            salvar(d); st.success("Salvo!")
+    if st.button("➕ Novo Acordo"):
+        d["acordos"].append({"mes":MESES[0],"data_pagamento":"","cliente":"","reu":"",
+                              "objeto":"","processo":"","valor_acordo":0.0,
+                              "honorarios":0.0,"status":"pendente"})
+        salvar(d); st.rerun()
 
     # cabeçalho (sem coluna Processo)
     hdr = st.columns([1.0,1.0,2.0,0.8,2.0,1.1,1.1,0.5,0.4])
@@ -620,7 +615,8 @@ with tab_ac:
         if _st3(cols[7], f"ac_st_{i}", a): mudou_ac = True
         if cols[8].button("🗑️", key=f"ac_del_{i}"): to_del = i
 
-    if mudou_ac: salvar(d); st.rerun()
+    salvar(d)
+    if mudou_ac: st.rerun()
 
     if to_del is not None:
         d["acordos"].pop(to_del); salvar(d); st.rerun()
@@ -695,16 +691,11 @@ with tab_ex:
     </div>""", unsafe_allow_html=True)
     st.markdown(LEGENDA_RECEITAS, unsafe_allow_html=True)
 
-    ex_a, ex_s = st.columns([6,1])
-    with ex_a:
-        if st.button("➕ Nova Execução"):
-            d["execucoes"].append({"mes":MESES[0],"cliente":"","reu":"","processo":"",
-                                    "valor_percebido":0.0,"sucumbencia":0.0,
-                                    "honorarios":0.0,"status":"pendente"})
-            salvar(d); st.rerun()
-    with ex_s:
-        if st.button("💾 Salvar", key="sv_ex"):
-            salvar(d); st.success("Salvo!")
+    if st.button("➕ Nova Execução"):
+        d["execucoes"].append({"mes":MESES[0],"cliente":"","reu":"","processo":"",
+                                "valor_percebido":0.0,"sucumbencia":0.0,
+                                "honorarios":0.0,"status":"pendente"})
+        salvar(d); st.rerun()
 
     if not d["execucoes"]:
         st.markdown("""<div class="bloco" style="text-align:center;padding:32px;">
@@ -748,7 +739,8 @@ with tab_ex:
             if _st3(cols[6], f"ex_st_{i}", e): mudou_ex = True
             if cols[7].button("🗑️", key=f"ex_del_{i}"): to_del_e = i
 
-        if mudou_ex: salvar(d); st.rerun()
+        salvar(d)
+        if mudou_ex: st.rerun()
         if to_del_e is not None:
             d["execucoes"].pop(to_del_e); salvar(d); st.rerun()
 
@@ -773,15 +765,10 @@ with tab_ex:
 with tab_hi:
     st.markdown("### 💼 Honorários Iniciais (Contratação)")
 
-    hi_a, hi_s = st.columns([6,1])
-    with hi_a:
-        if st.button("➕ Novo Honorário Inicial"):
-            d["honorarios_iniciais"].append({"cliente":"","processo":"","valor":0.0,
-                                              "data_pagamento":"","observacao":"","status":"pendente"})
-            salvar(d); st.rerun()
-    with hi_s:
-        if st.button("💾 Salvar", key="sv_hi"):
-            salvar(d); st.success("Salvo!")
+    if st.button("➕ Novo Honorário Inicial"):
+        d["honorarios_iniciais"].append({"cliente":"","processo":"","valor":0.0,
+                                          "data_pagamento":"","observacao":"","status":"pendente"})
+        salvar(d); st.rerun()
 
     st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
 
@@ -810,7 +797,8 @@ with tab_hi:
         if _st2(cols[4], f"hi_st_{i}", h): mudou_hi = True
         if cols[5].button("🗑️", key=f"hi_del_{i}"): to_del_h = i
 
-    if mudou_hi: salvar(d); st.rerun()
+    salvar(d)
+    if mudou_hi: st.rerun()
     if to_del_h is not None:
         d["honorarios_iniciais"].pop(to_del_h); salvar(d); st.rerun()
 
@@ -834,17 +822,13 @@ with tab_fix:
     col_lbl  = {col: lbl[:3] + "/" + lbl[-2:]
                 for col, lbl in COL_TO_MES.items() if col in COLS_VIS}
 
-    fix_nova, fix_sv = st.columns([5,1])
-    with fix_nova:
-        nova_cat = st.text_input("Nova categoria:", key="nova_fix", placeholder="Ex: Contador")
+    nova_cat = st.text_input("Nova categoria:", key="nova_fix", placeholder="Ex: Contador")
     if st.button("➕ Adicionar") and nova_cat.strip():
         if nova_cat.strip() not in d["fixas"]:
             d["fixas"][nova_cat.strip()] = {}
             d["fixas_quem"][nova_cat.strip()] = "dividido"
             d["fixas_status"][nova_cat.strip()] = {}
             salvar(d); st.rerun()
-    with fix_sv:
-        if st.button("💾 Salvar ", key="sv_fix"): salvar(d); st.success("Salvo!")
 
     # cabeçalho
     hcols = st.columns([2, 1.2] + [1]*len(COLS_VIS) + [1, 0.5])
@@ -969,7 +953,8 @@ with tab_fix:
         elif _qp_new == "Eduarda pagou tudo":
             _reembolsos.append(("Adriely", "Eduarda", val/2, cat))
 
-    if mudou_fix_st: salvar(d); st.rerun()
+    salvar(d)
+    if mudou_fix_st: st.rerun()
 
     # ── Resumo de reembolso ────────────────────────────────────────────────
     if _reembolsos:
@@ -1020,14 +1005,10 @@ with tab_var:
                             key="filt_var")
     st.markdown(LEGENDA_DESPESAS, unsafe_allow_html=True)
 
-    col_va, col_vs = st.columns([6,1])
-    with col_va:
-        if st.button("➕ Nova Despesa Variável"):
-            d["variaveis"].append({"descricao":"","valor":0.0,"parcelas":"1x",
-                                    "quem":"Adriely","onde":"","status":"pendente","meses":{}})
-            salvar(d); st.rerun()
-    with col_vs:
-        if st.button("💾 Salvar  ", key="sv_var"): salvar(d); st.success("Salvo!")
+    if st.button("➕ Nova Despesa Variável"):
+        d["variaveis"].append({"descricao":"","valor":0.0,"parcelas":"1x",
+                                "quem":"Adriely","onde":"","status":"pendente","meses":{}})
+        salvar(d); st.rerun()
 
     # ── constantes de meses (2025 → 2027) ─────────────────────────────────────
     _ALL_V_COLS = [
@@ -1309,7 +1290,8 @@ with tab_var:
                 for col in _ALL_V_COLS:
                     totais_v_col[col] += float(item.get("meses",{}).get(col, 0) or 0)
 
-    if mudou_var: salvar(d); st.rerun()
+    salvar(d)
+    if mudou_var: st.rerun()
     if to_del_v is not None:
         d["variaveis"].pop(to_del_v); salvar(d); st.rerun()
 
@@ -1608,17 +1590,12 @@ with tab_fin:
         </span>
     </div>""", unsafe_allow_html=True)
 
-    fin_a, fin_s = st.columns([6,1])
-    with fin_a:
-        if st.button("➕ Novo Processo"):
-            d["finalizados_sem_honor"].append({
-                "cliente":"","reu":"","processo":"",
-                "objeto":"","data_finalizacao":"","motivo":"Outro"
-            })
-            salvar(d); st.rerun()
-    with fin_s:
-        if st.button("💾 Salvar", key="sv_fin"):
-            salvar(d); st.success("Salvo!")
+    if st.button("➕ Novo Processo"):
+        d["finalizados_sem_honor"].append({
+            "cliente":"","reu":"","processo":"",
+            "objeto":"","data_finalizacao":"","motivo":"Outro"
+        })
+        salvar(d); st.rerun()
 
     if not d["finalizados_sem_honor"]:
         st.markdown("""<div class="bloco" style="text-align:center;padding:32px;">
@@ -1650,6 +1627,7 @@ with tab_fin:
                 key=f"fin_mot_{i}", label_visibility="collapsed")
             if cols[6].button("🗑️", key=f"fin_del_{i}"): to_del_fin = i
 
+        salvar(d)
         if to_del_fin is not None:
             d["finalizados_sem_honor"].pop(to_del_fin); salvar(d); st.rerun()
 
