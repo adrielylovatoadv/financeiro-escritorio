@@ -393,6 +393,19 @@ def carregar():
         for a in d.get("acordos", []):
             if "objeto" not in a: a["objeto"] = ""
             if "data_pagamento" not in a: a["data_pagamento"] = ""
+        _MES_DATE = {
+            "Out":"10/10/2025","Nov":"10/11/2025","Dez":"10/12/2025",
+            "Jan":"10/01/2026","Fev":"10/02/2026","Mar":"10/03/2026",
+            "Abr":"10/04/2026","Mai":"10/05/2026","Jun":"10/06/2026",
+            "Jul":"10/07/2026","Ago":"10/08/2026","Set":"10/09/2026",
+            "Out2":"10/10/2026","Nov2":"10/11/2026","Dez2":"10/12/2026",
+        }
+        for v in d.get("variaveis", []):
+            if not v.get("data_compra"):
+                meses = v.get("meses", {})
+                first = next((k for k, val in meses.items() if val and float(val) > 0), None)
+                if first and first in _MES_DATE:
+                    v["data_compra"] = _MES_DATE[first]
         _auto_pago_fixas(d)
         return d
     di = dados_iniciais()
