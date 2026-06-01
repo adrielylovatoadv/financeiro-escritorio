@@ -593,9 +593,9 @@ with tab_ac:
                               "honorarios":0.0,"status":"pendente"})
         salvar(d); st.rerun()
 
-    # cabeçalho (sem coluna Processo)
+    # cabeçalho
     hdr = st.columns([1.0,1.0,2.0,0.8,2.0,1.1,1.1,0.5,0.4])
-    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Objeto","Valor Acordo","Honorários","","Del"]):
+    for col, lbl in zip(hdr,["Mês","Data Pgto","Cliente","Réu","Nº Processo","Valor Acordo","Honorários","","Del"]):
         col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
                      unsafe_allow_html=True)
 
@@ -611,8 +611,8 @@ with tab_ac:
             key=f"ac_cli_{i}", label_visibility="collapsed")
         a["reu"] = cols[3].text_input("", value=a.get("reu",""),
             key=f"ac_reu_{i}", label_visibility="collapsed")
-        a["objeto"] = cols[4].text_input("", value=a.get("objeto",""),
-            key=f"ac_obj_{i}", label_visibility="collapsed")
+        a["processo"] = cols[4].text_input("", value=a.get("processo",""),
+            placeholder="0000000-00.0000.0.00.0000", key=f"ac_obj_{i}", label_visibility="collapsed")
 
         va_str = st.session_state.get(f"ac_va_{i}", _vs(a.get("valor_acordo",0)))
         va_new = cols[5].text_input("", value=va_str, placeholder="0,00",
