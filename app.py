@@ -522,6 +522,126 @@ else:
 </div>
 """, unsafe_allow_html=True)
 
+# ── Exportar tudo em Excel ────────────────────────────────────────────────────
+def _exportar_tudo_excel(dados: dict) -> bytes:
+    """Gera um arquivo Excel com todas as abas do sistema."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    wb.remove(wb.active)  # remove aba padrão vazia
+
+    HEADER_FILL = PatternFill("solid", fgColor="3F51B5")
+    HEADER_FONT = Font(bold=True, color="FFFFFF", size=10)
+    THIN = Side(style="thin", color="CCCCCC")
+    BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+    ALIGN_CTR = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ALIGN_LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    def _write_sheet(ws, headers, rows):
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.fill = HEADER_FILL
+            cell.font = HEADER_FONT
+            cell.alignment = ALIGN_CTR
+            cell.border = BORDER
+        for row in rows:
+            ws.append(row)
+            for cell in ws[ws.max_row]:
+                cell.alignment = ALIGN_LEFT
+                cell.border = BORDER
+        # auto-largura
+        for col_idx, col_cells in enumerate(ws.columns, 1):
+            max_len = max((len(str(c.value or "")) for c in col_cells), default=8)
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 4, 40)
+        ws.freeze_panes = "A2"
+
+    # ── 1. Acordos ──────────────────────────────────────────────────────────────
+    ws1 = wb.create_sheet("Acordos")
+    hdrs = ["Mês","Data Pagamento","Cliente","Réu","Objeto","Processo","Valor Acordo (R$)","Honorários (R$)","Status"]
+    rows = [[
+        a.get("mes",""), a.get("data_pagamento",""),
+        a.get("cliente",""), a.get("reu",""), a.get("objeto",""),
+        a.get("processo",""), float(a.get("valor_acordo",0)),
+        float(a.get("honorarios",0)), a.get("status",""),
+    ] for a in dados.get("acordos",[])]
+    _write_sheet(ws1, hdrs, rows)
+
+    # ── 2. Execuções ────────────────────────────────────────────────────────────
+    ws2 = wb.create_sheet("Execuções")
+    hdrs2 = ["Mês","Data Pagamento","Cliente","Réu","Processo","Valor Percebido (R$)","Sucumbência (R$)","Honorários (R$)","Status"]
+    rows2 = [[
+        e.get("mes",""), e.get("data_pagamento",""),
+        e.get("cliente",""), e.get("reu",""), e.get("processo",""),
+        float(e.get("valor_percebido",0)), float(e.get("sucumbencia",0)),
+        float(e.get("honorarios",0)), e.get("status",""),
+    ] for e in dados.get("execucoes",[])]
+    _write_sheet(ws2, hdrs2, rows2)
+
+    # ── 3. Honorários Iniciais ──────────────────────────────────────────────────
+    ws3 = wb.create_sheet("Hon. Iniciais")
+    hdrs3 = ["Cliente","Processo","Valor (R$)","Data Pagamento","Observação","Status"]
+    rows3 = [[
+        h.get("cliente",""), h.get("processo",""),
+        float(h.get("valor",0)), h.get("data_pagamento",""),
+        h.get("observacao",""), h.get("status",""),
+    ] for h in dados.get("honorarios_iniciais",[])]
+    _write_sheet(ws3, hdrs3, rows3)
+
+    # ── 4. Despesas Fixas ───────────────────────────────────────────────────────
+    ws4 = wb.create_sheet("Desp. Fixas")
+    meses_cols = ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out2","Nov2","Dez2"]
+    hdrs4 = ["Categoria","Responsável"] + [COL_TO_MES.get(c,c) for c in meses_cols] + ["Total (R$)"]
+    rows4 = []
+    for cat, valores in dados.get("fixas",{}).items():
+        quem = dados.get("fixas_quem",{}).get(cat,"dividido")
+        parcelas = [float(valores.get(c,0)) for c in meses_cols]
+        rows4.append([cat, quem] + parcelas + [sum(parcelas)])
+    _write_sheet(ws4, hdrs4, rows4)
+
+    # ── 5. Despesas Variáveis ───────────────────────────────────────────────────
+    ws5 = wb.create_sheet("Desp. Variáveis")
+    hdrs5 = ["Descrição","Valor Total (R$)","Parcelas","Responsável","Onde","Status","Data Compra"] + \
+            [COL_TO_MES.get(c,c) for c in meses_cols]
+    rows5 = []
+    for v in dados.get("variaveis",[]):
+        parcelas = [float(v.get("meses",{}).get(c,0)) for c in meses_cols]
+        rows5.append([
+            v.get("descricao",""), float(v.get("valor",0)),
+            v.get("parcelas",""), v.get("quem",""),
+            v.get("onde",""), v.get("status",""),
+            v.get("data_compra",""),
+        ] + parcelas)
+    _write_sheet(ws5, hdrs5, rows5)
+
+    # ── 6. Finalizados sem Honorário ────────────────────────────────────────────
+    ws6 = wb.create_sheet("Finalizados s/ Hon.")
+    hdrs6 = ["Cliente","Réu","Processo","Objeto","Data Finalização","Motivo"]
+    rows6 = [[
+        p.get("cliente",""), p.get("reu",""), p.get("processo",""),
+        p.get("objeto",""), p.get("data_finalizacao",""), p.get("motivo",""),
+    ] for p in dados.get("finalizados_sem_honor",[])]
+    _write_sheet(ws6, hdrs6, rows6)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+# Botão de exportação completa (acima das abas)
+_col_exp, _ = st.columns([1, 4])
+with _col_exp:
+    st.download_button(
+        label="📥 Baixar tudo em Excel",
+        data=_exportar_tudo_excel(d),
+        file_name="financeiro_escritorio_completo.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        help="Exporta todas as abas: Acordos, Execuções, Honorários, Fixas, Variáveis e Finalizados",
+        use_container_width=True,
+    )
+
 tabs = st.tabs(["📊 Dashboard","🤝 Acordos","⚖️ Execuções","💼 Hon. Iniciais",
                 "🏢 Desp. Fixas","🛒 Desp. Variáveis","⚖️ Balanço","📁 Finalizados s/ Hon."])
 tab_dash, tab_ac, tab_ex, tab_hi, tab_fix, tab_var, tab_bal, tab_fin = tabs
