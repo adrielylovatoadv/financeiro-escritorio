@@ -617,7 +617,7 @@ def _exportar_tudo_excel(dados: dict) -> bytes:
     _write_sheet(ws5, hdrs5, rows5)
 
     # ── 6. Finalizados sem Honorário ────────────────────────────────────────────
-    ws6 = wb.create_sheet("Finalizados s/ Hon.")
+    ws6 = wb.create_sheet("Finalizados sem Hon.")
     hdrs6 = ["Cliente","Réu","Processo","Objeto","Data Finalização","Motivo"]
     rows6 = [[
         p.get("cliente",""), p.get("reu",""), p.get("processo",""),
