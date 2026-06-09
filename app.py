@@ -643,8 +643,8 @@ with _col_exp:
     )
 
 tabs = st.tabs(["📊 Dashboard","🤝 Acordos","⚖️ Execuções","💼 Hon. Iniciais",
-                "🏢 Desp. Fixas","🛒 Desp. Variáveis","⚖️ Balanço","📁 Finalizados s/ Hon."])
-tab_dash, tab_ac, tab_ex, tab_hi, tab_fix, tab_var, tab_bal, tab_fin = tabs
+                "🏢 Desp. Fixas","🛒 Desp. Variáveis","⚖️ Balanço"])
+tab_dash, tab_ac, tab_ex, tab_hi, tab_fix, tab_var, tab_bal = tabs
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers de totais
@@ -1784,70 +1784,6 @@ with tab_bal:
 # ─────────────────────────────────────────────────────────────────────────────
 # PROCESSOS FINALIZADOS SEM HONORÁRIO
 # ─────────────────────────────────────────────────────────────────────────────
-with tab_fin:
-    st.markdown("### 📁 Processos Finalizados sem Honorário")
-    st.markdown("""<div class="bloco" style="border-color:#5c6bc0;padding:12px 16px;margin-bottom:12px;">
-        <span style="color:#7986cb;font-size:12px;">
-        Processos encerrados nos quais não houve recebimento de honorários
-        (improcedência, acordo sem honorário, desistência, etc.)
-        </span>
-    </div>""", unsafe_allow_html=True)
-
-    if st.button("➕ Novo Processo"):
-        d["finalizados_sem_honor"].append({
-            "cliente":"","reu":"","processo":"",
-            "objeto":"","data_finalizacao":"","motivo":"Outro"
-        })
-        salvar(d); st.rerun()
-
-    if not d["finalizados_sem_honor"]:
-        st.markdown("""<div class="bloco" style="text-align:center;padding:32px;">
-            <span style="color:#5c6bc0;font-size:14px;">Nenhum processo cadastrado ainda.</span>
-        </div>""", unsafe_allow_html=True)
-    else:
-        hdr = st.columns([1.8,1.0,2.4,1.8,1.2,1.6,0.4])
-        for col, lbl in zip(hdr, ["Cliente","Réu","Processo","Objeto","Data Final.","Motivo",""]):
-            col.markdown(f"<span style='font-size:10px;color:#7986cb;font-weight:600;'>{lbl}</span>",
-                         unsafe_allow_html=True)
-
-        to_del_fin = None
-        MOTIVOS = ["Improcedência","Acordo sem honorário","Desistência","Extinção","Cancelado","Prescrição","Outro"]
-        for i, p in enumerate(d["finalizados_sem_honor"]):
-            cols = st.columns([1.8,1.0,2.4,1.8,1.2,1.6,0.4])
-            p["cliente"] = cols[0].text_input("", value=p.get("cliente",""),
-                key=f"fin_cli_{i}", label_visibility="collapsed")
-            p["reu"] = cols[1].text_input("", value=p.get("reu",""),
-                key=f"fin_reu_{i}", label_visibility="collapsed")
-            p["processo"] = cols[2].text_input("", value=p.get("processo",""),
-                key=f"fin_proc_{i}", label_visibility="collapsed")
-            p["objeto"] = cols[3].text_input("", value=p.get("objeto",""),
-                key=f"fin_obj_{i}", label_visibility="collapsed")
-            p["data_finalizacao"] = cols[4].text_input("", value=p.get("data_finalizacao",""),
-                placeholder="DD/MM/AAAA", key=f"fin_dt_{i}", label_visibility="collapsed")
-            cur_mot = p.get("motivo","Outro")
-            p["motivo"] = cols[5].selectbox("", MOTIVOS,
-                index=MOTIVOS.index(cur_mot) if cur_mot in MOTIVOS else len(MOTIVOS)-1,
-                key=f"fin_mot_{i}", label_visibility="collapsed")
-            if cols[6].button("🗑️", key=f"fin_del_{i}"): to_del_fin = i
-
-        salvar(d)
-        if to_del_fin is not None:
-            d["finalizados_sem_honor"].pop(to_del_fin); salvar(d); st.rerun()
-
-        st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-        st.markdown(f"<span style='color:#7986cb;font-size:13px;'>Total de processos: "
-                    f"<strong style='color:#e8eaf6;'>{len(d['finalizados_sem_honor'])}</strong></span>",
-                    unsafe_allow_html=True)
-        df_fin = pd.DataFrame([{
-            "Cliente": p.get("cliente",""), "Réu": p.get("reu",""),
-            "Processo": p.get("processo",""), "Objeto": p.get("objeto",""),
-            "Data Finalização": p.get("data_finalizacao",""),
-            "Motivo": p.get("motivo",""),
-        } for p in d["finalizados_sem_honor"]])
-        st.download_button("⬇️ Baixar Excel", data=_to_excel(df_fin),
-            file_name="finalizados_sem_honorario.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="dl_fin")
 
 # ── Rodapé / Advogado ─────────────────────────────────────────────────────────
 st.markdown("<br><hr class='divider'>", unsafe_allow_html=True)
