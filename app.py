@@ -138,6 +138,40 @@ _components.html("""
 # ── Persistência ──────────────────────────────────────────────────────────────
 DATA_FILE = os.path.join(os.path.dirname(__file__), "financeiro_data.json")
 
+# ── Google Sheets (persistência em nuvem p/ Streamlit Community Cloud) ────────
+def _gs_client():
+    """Retorna cliente gspread autenticado via st.secrets, ou None se não configurado."""
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        scopes = [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        return gspread.authorize(creds)
+    except Exception:
+        return None
+
+def _gs_sheet():
+    """Retorna a aba 'dados' da planilha configurada em st.secrets, ou None."""
+    try:
+        client = _gs_client()
+        if client is None:
+            return None
+        sheet_id = st.secrets.get("spreadsheet_id", "")
+        if not sheet_id:
+            return None
+        wb = client.open_by_key(sheet_id)
+        try:
+            ws = wb.worksheet("dados")
+        except Exception:
+            ws = wb.add_worksheet(title="dados", rows=3, cols=2)
+        return ws
+    except Exception:
+        return None
+
 MESES = ["Out/2025","Nov/2025","Dez/2025",
          "Jan/2026","Fev/2026","Mar/2026","Abr/2026","Mai/2026","Jun/2026",
          "Jul/2026","Ago/2026","Set/2026","Out/2026","Nov/2026","Dez/2026",
@@ -368,53 +402,89 @@ def _auto_pago_fixas(d):
                 d["fixas_status"][cat][f"{col}_adriely"] = "pago"
                 d["fixas_status"][cat][f"{col}_eduarda"] = "pago"
 
+def _migrar(d: dict) -> dict:
+    """Aplica migrações de campos novos sobre dados carregados de qualquer fonte."""
+    if "execucoes" not in d: d["execucoes"] = []
+    if "honorarios_iniciais" not in d: d["honorarios_iniciais"] = []
+    if "fixas_quem" not in d:
+        d["fixas_quem"] = {cat: "dividido" for cat in d.get("fixas", {})}
+    if "fixas_status" not in d:
+        d["fixas_status"] = {cat: {} for cat in d.get("fixas", {})}
+    if "finalizados_sem_honor" not in d:
+        d["finalizados_sem_honor"] = _finalizados_iniciais()
+    if not d.get("_migrated_residuais"):
+        _res = {
+            "5001232-34.2025.8.13.0329": "PENSAO 145353251 · falta R$ 352,64 em cobrança",
+            "5000000-50.2026.8.13.0329": "MENSAL COMBINAQUI · R$ 4.500,00 recebido · falta R$ 636,68 em cobrança",
+        }
+        for a in d.get("acordos", []):
+            if a.get("processo") in _res:
+                a["objeto"] = _res[a["processo"]]
+        d["_migrated_residuais"] = True
+    for a in d.get("acordos", []):
+        if "objeto" not in a: a["objeto"] = ""
+        if "data_pagamento" not in a: a["data_pagamento"] = ""
+    _MES_DATE = {
+        "Out": "10/10/2025", "Nov": "10/11/2025", "Dez": "10/12/2025",
+        "Jan": "10/01/2026", "Fev": "10/02/2026", "Mar": "10/03/2026",
+        "Abr": "10/04/2026", "Mai": "10/05/2026", "Jun": "10/06/2026",
+        "Jul": "10/07/2026", "Ago": "10/08/2026", "Set": "10/09/2026",
+        "Out2": "10/10/2026", "Nov2": "10/11/2026", "Dez2": "10/12/2026",
+    }
+    for v in d.get("variaveis", []):
+        if not v.get("data_compra"):
+            meses = v.get("meses", {})
+            first = next((k for k, val in meses.items() if val and float(val) > 0), None)
+            if first and first in _MES_DATE:
+                v["data_compra"] = _MES_DATE[first]
+    return d
+
+
 def carregar():
-    if os.path.exists(DATA_FILE):
+    d = None
+
+    # 1) Tenta Google Sheets (Streamlit Cloud)
+    try:
+        ws = _gs_sheet()
+        if ws is not None:
+            val = ws.acell("A1").value
+            if val and val.strip().startswith("{"):
+                d = json.loads(val)
+    except Exception:
+        pass
+
+    # 2) Fallback: arquivo local (desenvolvimento)
+    if d is None and os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             d = json.load(f)
-        # migrar campos novos se precisar
-        if "execucoes" not in d: d["execucoes"] = []
-        if "honorarios_iniciais" not in d: d["honorarios_iniciais"] = []
-        if "fixas_quem" not in d:
-            d["fixas_quem"] = {cat:"dividido" for cat in d.get("fixas",{})}
-        if "fixas_status" not in d:
-            d["fixas_status"] = {cat:{} for cat in d.get("fixas",{})}
-        if "finalizados_sem_honor" not in d:
-            d["finalizados_sem_honor"] = _finalizados_iniciais()
-        if not d.get("_migrated_residuais"):
-            _res = {
-                "5001232-34.2025.8.13.0329": "PENSAO 145353251 · falta R$ 352,64 em cobrança",
-                "5000000-50.2026.8.13.0329": "MENSAL COMBINAQUI · R$ 4.500,00 recebido · falta R$ 636,68 em cobrança",
-            }
-            for a in d.get("acordos", []):
-                if a.get("processo") in _res:
-                    a["objeto"] = _res[a["processo"]]
-            d["_migrated_residuais"] = True
-        for a in d.get("acordos", []):
-            if "objeto" not in a: a["objeto"] = ""
-            if "data_pagamento" not in a: a["data_pagamento"] = ""
-        _MES_DATE = {
-            "Out":"10/10/2025","Nov":"10/11/2025","Dez":"10/12/2025",
-            "Jan":"10/01/2026","Fev":"10/02/2026","Mar":"10/03/2026",
-            "Abr":"10/04/2026","Mai":"10/05/2026","Jun":"10/06/2026",
-            "Jul":"10/07/2026","Ago":"10/08/2026","Set":"10/09/2026",
-            "Out2":"10/10/2026","Nov2":"10/11/2026","Dez2":"10/12/2026",
-        }
-        for v in d.get("variaveis", []):
-            if not v.get("data_compra"):
-                meses = v.get("meses", {})
-                first = next((k for k, val in meses.items() if val and float(val) > 0), None)
-                if first and first in _MES_DATE:
-                    v["data_compra"] = _MES_DATE[first]
-        _auto_pago_fixas(d)
-        return d
-    di = dados_iniciais()
-    _auto_pago_fixas(di)
-    return di
+
+    # 3) Primeira execução: usa dados iniciais
+    if d is None:
+        d = dados_iniciais()
+
+    d = _migrar(d)
+    _auto_pago_fixas(d)
+    return d
 
 def salvar(d):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=2)
+    payload = json.dumps(d, ensure_ascii=False, indent=2)
+
+    # Grava no Google Sheets (Streamlit Cloud) — fonte primária
+    _gs_ok = False
+    try:
+        ws = _gs_sheet()
+        if ws is not None:
+            ws.update("A1", [[payload]])
+            _gs_ok = True
+    except Exception:
+        pass
+
+    # Grava no arquivo local (desenvolvimento / fallback)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            f.write(payload)
+    except Exception:
+        pass  # em Streamlit Cloud o filesystem é efêmero — não é erro fatal
 
 if "dados" not in st.session_state:
     st.session_state.dados = carregar()
