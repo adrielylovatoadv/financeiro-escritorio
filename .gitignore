@@ -1,5 +1,4 @@
 __pycache__/
 *.pyc
 .env
-financeiro_data.json
 .DS_Store

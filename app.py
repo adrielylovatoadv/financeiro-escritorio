@@ -2,6 +2,8 @@ import streamlit as st
 import json
 import os
 import io
+import base64
+import urllib.request
 import streamlit.components.v1 as _components
 from datetime import date as _date
 import pandas as pd
@@ -137,6 +139,54 @@ _components.html("""
 
 # ── Persistência ──────────────────────────────────────────────────────────────
 DATA_FILE = os.path.join(os.path.dirname(__file__), "financeiro_data.json")
+
+# ── GitHub sync (persistência em nuvem — mesmo padrão do controle processual) ─
+_GH_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
+_GH_REPO  = "adrielylovatoadv/financeiro-escritorio"
+_GH_FILE  = "financeiro_data.json"
+_GH_API   = f"https://api.github.com/repos/{_GH_REPO}/contents/{_GH_FILE}"
+
+
+def _gh_headers():
+    return {
+        "Authorization": f"token {_GH_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    }
+
+
+def _gh_get():
+    """Baixa financeiro_data.json do GitHub. Retorna (dict, sha) ou (None, '')."""
+    if not _GH_TOKEN:
+        return None, ""
+    try:
+        req = urllib.request.Request(_GH_API, headers=_gh_headers())
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read())
+            conteudo = json.loads(base64.b64decode(body["content"]).decode())
+            return conteudo, body.get("sha", "")
+    except Exception:
+        return None, ""
+
+
+def _gh_put(data, sha):
+    """Salva financeiro_data.json no GitHub."""
+    if not _GH_TOKEN:
+        return
+    try:
+        conteudo = base64.b64encode(
+            json.dumps(data, ensure_ascii=False, indent=2, default=str).encode()
+        ).decode()
+        payload = json.dumps({
+            "message": "atualiza dados financeiro",
+            "content": conteudo,
+            "sha": sha,
+        }).encode()
+        req = urllib.request.Request(_GH_API, data=payload, headers=_gh_headers(), method="PUT")
+        urllib.request.urlopen(req, timeout=15)
+    except Exception:
+        pass
+
 
 # ── Google Sheets (persistência em nuvem p/ Streamlit Community Cloud) ────────
 def _gs_client():
@@ -443,17 +493,18 @@ def _migrar(d: dict) -> dict:
 def carregar():
     d = None
 
-    # 1) Tenta Google Sheets (Streamlit Cloud)
-    try:
-        ws = _gs_sheet()
-        if ws is not None:
-            val = ws.acell("A1").value
-            if val and val.strip().startswith("{"):
-                d = json.loads(val)
-    except Exception:
-        pass
+    # 1) Tenta GitHub (fonte principal — persiste entre restarts)
+    gh_data, _ = _gh_get()
+    if gh_data is not None:
+        d = gh_data
+        # espelha localmente para leitura rápida
+        try:
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
-    # 2) Fallback: arquivo local (desenvolvimento)
+    # 2) Fallback: arquivo local (desenvolvimento / sem token)
     if d is None and os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             d = json.load(f)
@@ -467,24 +518,16 @@ def carregar():
     return d
 
 def salvar(d):
-    payload = json.dumps(d, ensure_ascii=False, indent=2)
-
-    # Grava no Google Sheets (Streamlit Cloud) — fonte primária
-    _gs_ok = False
+    # 1) Salva localmente (rápido, cache local)
     try:
-        ws = _gs_sheet()
-        if ws is not None:
-            ws.update("A1", [[payload]])
-            _gs_ok = True
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
 
-    # Grava no arquivo local (desenvolvimento / fallback)
-    try:
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            f.write(payload)
-    except Exception:
-        pass  # em Streamlit Cloud o filesystem é efêmero — não é erro fatal
+    # 2) Sincroniza com GitHub (persistência permanente)
+    _, sha = _gh_get()
+    _gh_put(d, sha)
 
 if "dados" not in st.session_state:
     st.session_state.dados = carregar()
