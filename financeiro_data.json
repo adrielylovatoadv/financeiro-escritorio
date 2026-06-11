@@ -115,7 +115,7 @@
       "data_pagamento": "04/03/2026",
       "cliente": "BERNADETE NARDI DE PAULA",
       "reu": "SANTANDER",
-      "objeto": "PENSAO 145353251",
+      "objeto": "PENSAO 145353251 · falta R$ 352,64 em cobrança",
       "processo": "5001232-34.2025.8.13.0329",
       "valor_acordo": 3000.0,
       "honorarios": 1245.0,
@@ -126,7 +126,7 @@
       "data_pagamento": "09/03/2026",
       "cliente": "ROSARIA LOGUERCIOS DOS SANTOS",
       "reu": "ITAU",
-      "objeto": "MENSAL COMBINAQUI",
+      "objeto": "MENSAL COMBINAQUI · R$ 4.500,00 recebido · falta R$ 636,68 em cobrança",
       "processo": "5000000-50.2026.8.13.0329",
       "valor_acordo": 5000.0,
       "honorarios": 2075.0,
@@ -262,7 +262,7 @@
       "processo": "5000206-64.2026.8.13.0329",
       "valor_acordo": 4320.68,
       "honorarios": 1793.08,
-      "status": "repasse"
+      "status": "pago"
     }
   ],
   "execucoes": [],
@@ -282,6 +282,14 @@
       "data_pagamento": "",
       "observacao": "Contratação – honorário inicial",
       "status": "pendente"
+    },
+    {
+      "cliente": "LUCELIA",
+      "processo": "",
+      "valor": 1200.0,
+      "data_pagamento": "25/05/2026",
+      "observacao": "",
+      "status": "pendente"
     }
   ],
   "fixas": {
@@ -293,7 +301,14 @@
       "Fev": 600.0,
       "Mar": 600.0,
       "Abr": 600.0,
-      "Mai": 600.0
+      "Mai": 600.0,
+      "Jun": 0.0,
+      "Jul": 0.0,
+      "Ago": 0.0,
+      "Set": 0.0,
+      "Out2": 0.0,
+      "Nov2": 0.0,
+      "Dez2": 0.0
     },
     "Água": {
       "Nov": 27.18,
@@ -303,7 +318,14 @@
       "Abr": 25.77,
       "Out": 0.0,
       "Dez": 0.0,
-      "Mai": 0.0
+      "Mai": 0.0,
+      "Jun": 0.0,
+      "Jul": 0.0,
+      "Ago": 0.0,
+      "Set": 0.0,
+      "Out2": 0.0,
+      "Nov2": 0.0,
+      "Dez2": 0.0
     },
     "Força": {
       "Dez": 103.22,
@@ -313,7 +335,14 @@
       "Nov": 0.0,
       "Fev": 0.0,
       "Abr": 0.0,
-      "Mai": 0.0
+      "Mai": 0.0,
+      "Jun": 0.0,
+      "Jul": 0.0,
+      "Ago": 0.0,
+      "Set": 0.0,
+      "Out2": 0.0,
+      "Nov2": 0.0,
+      "Dez2": 0.0
     },
     "Internet": {
       "Out": 110.83,
@@ -323,7 +352,14 @@
       "Fev": 79.9,
       "Mar": 79.9,
       "Abr": 79.9,
-      "Mai": 79.9
+      "Mai": 79.9,
+      "Jun": 0.0,
+      "Jul": 0.0,
+      "Ago": 0.0,
+      "Set": 0.0,
+      "Out2": 0.0,
+      "Nov2": 0.0,
+      "Dez2": 0.0
     },
     "Funcionário 1": {
       "Out": 0.0,
@@ -333,7 +369,14 @@
       "Fev": 0.0,
       "Mar": 0.0,
       "Abr": 0.0,
-      "Mai": 0.0
+      "Mai": 0.0,
+      "Jun": 0.0,
+      "Jul": 0.0,
+      "Ago": 0.0,
+      "Set": 0.0,
+      "Out2": 0.0,
+      "Nov2": 0.0,
+      "Dez2": 0.0
     },
     "Funcionário 2": {
       "Out": 0.0,
@@ -343,7 +386,14 @@
       "Fev": 0.0,
       "Mar": 0.0,
       "Abr": 0.0,
-      "Mai": 0.0
+      "Mai": 0.0,
+      "Jun": 0.0,
+      "Jul": 0.0,
+      "Ago": 0.0,
+      "Set": 0.0,
+      "Out2": 0.0,
+      "Nov2": 0.0,
+      "Dez2": 0.0
     }
   },
   "fixas_quem": {
@@ -378,8 +428,8 @@
       "Mar_eduarda": "pago",
       "Abr_adriely": "pago",
       "Abr_eduarda": "pago",
-      "Mai_adriely": "pendente",
-      "Mai_eduarda": "pendente"
+      "Mai_adriely": "pago",
+      "Mai_eduarda": "pago"
     },
     "Água": {
       "Nov": "pago",
@@ -445,7 +495,7 @@
       "parcelas": "10x",
       "quem": "Eduarda",
       "onde": "Shopee",
-      "status": "pago",
+      "status": "pendente",
       "meses": {
         "Out": 75.0,
         "Nov": 75.0,
@@ -455,8 +505,10 @@
         "Mar": 75.0,
         "Abr": 75.0,
         "Mai": 75.0,
-        "Jun": 75,
-        "Jul": 75
+        "Jun": 75.0,
+        "Jul": 75.0,
+        "Ago": 0.0,
+        "Set": 0.0
       },
       "data_compra": "10/10/2025"
     },
@@ -466,7 +518,7 @@
       "parcelas": "8x",
       "quem": "Eduarda",
       "onde": "Mercado Livre",
-      "status": "pago",
+      "status": "pendente",
       "meses": {
         "Nov": 40.0,
         "Dez": 40.0,
@@ -475,8 +527,26 @@
         "Mar": 40.0,
         "Abr": 40.0,
         "Mai": 40.0,
-        "Jun": 40,
-        "Out": 0.0
+        "Jun": 40.0,
+        "Out": 0,
+        "Jul": 0.0,
+        "Ago": 0.0,
+        "Set": 0.0,
+        "Out2": 0,
+        "Nov2": 0,
+        "Dez2": 0,
+        "Jan27": 0,
+        "Fev27": 0,
+        "Mar27": 0,
+        "Abr27": 0,
+        "Mai27": 0,
+        "Jun27": 0,
+        "Jul27": 0,
+        "Ago27": 0,
+        "Set27": 0,
+        "Out27": 0,
+        "Nov27": 0,
+        "Dez27": 0
       },
       "data_compra": "10/11/2025"
     },
@@ -1166,5 +1236,80 @@
       },
       "data_compra": "10/04/2026"
     }
-  ]
+  ],
+  "finalizados_sem_honor": [
+    {
+      "cliente": "MARCIA MARQUES SILVA ESTEVÃO",
+      "reu": "CAMPOS ELISIOS",
+      "processo": "5000059-38.2026.8.13.0329",
+      "objeto": "OBRIGAÇÃO DE FAZER",
+      "data_finalizacao": "",
+      "motivo": "Extinção"
+    },
+    {
+      "cliente": "MATHEUS SERRAGLIA REIS AMENT",
+      "reu": "ITAU",
+      "processo": "4006494-36.2026.8.26.0506",
+      "objeto": "TAR PACOTE",
+      "data_finalizacao": "",
+      "motivo": "Cancelado"
+    },
+    {
+      "cliente": "HELIO DE SOUZA",
+      "reu": "BANRISUL",
+      "processo": "5008843-54.2025.8.13.0647",
+      "objeto": "13176708",
+      "data_finalizacao": "",
+      "motivo": "Desistência"
+    },
+    {
+      "cliente": "JOSE CARLOS DOS SANTOS",
+      "reu": "QI SOCIE",
+      "processo": "5001251-40.2025.8.13.0329",
+      "objeto": "0023336525JCD",
+      "data_finalizacao": "",
+      "motivo": "Desistência"
+    },
+    {
+      "cliente": "RUTH FELICIANA DA SILVA SOUZA",
+      "reu": "SANTANDER",
+      "processo": "5007260-34.2025.8.13.0647",
+      "objeto": "RMC n. 877742182-0",
+      "data_finalizacao": "",
+      "motivo": "Improcedência"
+    },
+    {
+      "cliente": "HELIO DE SOUZA",
+      "reu": "BMG",
+      "processo": "5007845-86.2025.8.13.0647",
+      "objeto": "RMC 8932388 e 11105568",
+      "data_finalizacao": "",
+      "motivo": "Desistência"
+    },
+    {
+      "cliente": "ANA MARIA DE OLIVEIRA",
+      "reu": "FACTA",
+      "processo": "5001079-98.2025.8.13.0329",
+      "objeto": "73773620",
+      "data_finalizacao": "",
+      "motivo": "Desistência"
+    },
+    {
+      "cliente": "MATHEUS SERRAGLIA REIS AMENT",
+      "reu": "ITAU",
+      "processo": "4014073-35.2026.8.26.0506",
+      "objeto": "TAR PACOTE",
+      "data_finalizacao": "",
+      "motivo": "Desistência"
+    },
+    {
+      "cliente": "ANA MARIA DE OLIVEIRA",
+      "reu": "ITAU",
+      "processo": "5000918-88.2025.8.13.0329",
+      "objeto": "647932633 / 633079531 / 638223061 / 599824559",
+      "data_finalizacao": "",
+      "motivo": "Desistência"
+    }
+  ],
+  "_migrated_residuais": true
 }
