@@ -1291,6 +1291,15 @@
         "Set": 0.0
       },
       "data_compra": "11/06/2026"
+    },
+    {
+      "descricao": "",
+      "valor": 0.0,
+      "parcelas": "1x",
+      "quem": "Adriely",
+      "onde": "",
+      "status": "pendente",
+      "meses": {}
     }
   ],
   "finalizados_sem_honor": [
