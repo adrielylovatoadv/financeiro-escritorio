@@ -302,7 +302,7 @@
       "Mar": 600.0,
       "Abr": 600.0,
       "Mai": 600.0,
-      "Jun": 0.0,
+      "Jun": 600.0,
       "Jul": 0.0,
       "Ago": 0.0,
       "Set": 0.0,
@@ -429,7 +429,10 @@
       "Abr_adriely": "pago",
       "Abr_eduarda": "pago",
       "Mai_adriely": "pago",
-      "Mai_eduarda": "pago"
+      "Mai_eduarda": "pago",
+      "Jun_adriely": "pendente",
+      "Jun_eduarda": "pendente",
+      "Jun_quem_pagou": "dividido"
     },
     "Água": {
       "Nov": "pago",
