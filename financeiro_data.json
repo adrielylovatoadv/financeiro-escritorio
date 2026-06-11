@@ -1278,7 +1278,7 @@
       "data_compra": "01/06/2026"
     },
     {
-      "descricao": "Railway sistema",
+      "descricao": "Registro",
       "valor": 0.0,
       "parcelas": "1x",
       "quem": "Adriely",
@@ -1290,7 +1290,7 @@
         "Ago": 0.0,
         "Set": 0.0
       },
-      "data_compra": ""
+      "data_compra": "11/06/2026"
     }
   ],
   "finalizados_sem_honor": [
