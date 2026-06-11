@@ -1247,9 +1247,9 @@
       "onde": "Shopee",
       "status": "pendente",
       "meses": {
-        "Jun": 0.0,
-        "Jul": 0.0,
-        "Ago": 0.0,
+        "Jun": 50.0,
+        "Jul": 50.0,
+        "Ago": 50.0,
         "Set": 0.0,
         "Out": 0,
         "Nov": 0,
