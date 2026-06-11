@@ -289,7 +289,7 @@
       "valor": 1200.0,
       "data_pagamento": "25/05/2026",
       "observacao": "",
-      "status": "pendente"
+      "status": "pago"
     }
   ],
   "fixas": {
