@@ -1284,7 +1284,13 @@
       "quem": "Adriely",
       "onde": "",
       "status": "pendente",
-      "meses": {}
+      "meses": {
+        "Jun": 0.0,
+        "Jul": 0.0,
+        "Ago": 0.0,
+        "Set": 0.0
+      },
+      "data_compra": ""
     }
   ],
   "finalizados_sem_honor": [
