@@ -1276,6 +1276,15 @@
         "Dez27": 0
       },
       "data_compra": "01/06/2026"
+    },
+    {
+      "descricao": "",
+      "valor": 0.0,
+      "parcelas": "1x",
+      "quem": "Adriely",
+      "onde": "",
+      "status": "pendente",
+      "meses": {}
     }
   ],
   "finalizados_sem_honor": [
